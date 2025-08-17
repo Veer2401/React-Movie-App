@@ -2,6 +2,8 @@
 A deployable movie app built with React.js and Tailwind css to understand the basic fundamentals of React js and to learn react while creating the project
 
 # ✨ Features
+<br>
+testing 123
 
 🔎 Search movies with debounced input and instant results
 
