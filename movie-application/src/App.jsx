@@ -1,14 +1,26 @@
-import React from 'react'
+import React, { useState } from 'react'
+import Search from './components/Search'
 
 const App = () => {
+  
+  const [searchTerm,setSearchTerm] = useState('')
+
   return (
-    <div>
-      <h1 class="text-3xl font-bold align-top">
-      Hello world!
-      <br></br>
-      This is a React Movie Application with Tailwind CSS!
-      </h1>
-    </div>
+    <main>
+
+      <div className="pattern" />
+      <div className='wrapper'>
+          <header>
+            <img src="./hero-img.png" alt="Hero-Banner" />
+            <h1>Find your <span className="text-gradient">favourite </span>movies !</h1>
+          </header>
+
+          <Search searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+          <br>
+          </br>
+          <h1 className='search-term'> <span className='text-gradient'>{searchTerm}</span></h1>
+      </div>
+    </main>
   )
 }
 
