@@ -17,6 +17,8 @@ const App = () => {
       <Card title="Star Wars" />
       <Card title="The Godfather" />
       <Card title="Inception" />
+      <Card title="The Dark Knight" />
+      
     </div>
    
   )
