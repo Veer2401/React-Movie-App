@@ -2,6 +2,7 @@ import React, { use, useEffect, useState } from 'react'
 import Search from './components/Search'
 import MovieCard from './components/MovieCard';
 
+
 // API - Application Programming Interface
 // The API key is stored in the .env.local file
 // We will use the VITE_TMDB_API_KEY environment variable to access the API key
