@@ -72,9 +72,14 @@ const App = () => {
   return (
     <main>
 
+      <div className="logo">
+        <img src="./logo.png" alt="Logo" className="w-[400px] h-[400px]" />
+      </div>
+
       <div className="pattern" />
       <div className='wrapper'>
           <header>
+           {/* <img src="./logo.png" alt="Hero-Banner" className="w-[400px] h-[300px]" /> */}
             <img src="./hero.png" alt="Hero-Banner" className="w-[800px] h-auto" />
             <br></br>
             <h1>Your <span className="text-gradient">movie </span> dictionary 🎬</h1>
