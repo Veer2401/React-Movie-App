@@ -1,5 +1,6 @@
 import React, { use, useEffect, useState } from 'react'
 import Search from './components/Search'
+import MovieCard from './components/MovieCard';
 
 // API - Application Programming Interface
 // The API key is stored in the .env.local file
@@ -84,7 +85,7 @@ const App = () => {
             ) : (
               <ul>
                 {movieList.map((movie) => (
-                  <p key={movie.id} className='text-white'>{movie.title}</p>
+                  <MovieCard key={movie.id} movie={movie} />
                 ))}
               </ul>
             )}
