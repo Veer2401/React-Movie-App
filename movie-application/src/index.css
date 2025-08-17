@@ -40,3 +40,14 @@ body {
 .card:hover {
   transform: scale(1.05);
 }
+
+button{
+  border: none;
+  font-size: 30px;
+  background-color: transparent;
+  color: whitesmoke;
+  cursor: pointer;
+  width: 100%;
+  text-align: right;
+  
+}
