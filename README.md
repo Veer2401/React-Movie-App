@@ -1,4 +1,4 @@
-# 🎬 Movie Explorer (React 19 + TMDB API)
+# 🎬 CinematicX - The React Movie Library
 
 Hey there 👋 I’m **Veer**, and this is my Movie Explorer app!  
 I built this while learning React 19 to get hands-on practice with components, hooks, routing, and API integration.  
