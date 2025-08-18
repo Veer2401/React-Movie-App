@@ -5,6 +5,7 @@ import { updateSearchCount } from './appwrite';
 
 
 
+
 // API - Application Programming Interface
 // The API key is stored in the .env.local file
 // We will use the VITE_TMDB_API_KEY environment variable to access the API key
