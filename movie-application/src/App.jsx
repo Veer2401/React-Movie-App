@@ -4,6 +4,7 @@ import MovieCard from './components/MovieCard';
 import { updateSearchCount } from './appwrite';
 
 
+
 // API - Application Programming Interface
 // The API key is stored in the .env.local file
 // We will use the VITE_TMDB_API_KEY environment variable to access the API key
@@ -84,7 +85,10 @@ const App = () => {
             <br></br>
             <h1>Cinematic<span className='text-gradient'>X</span></h1>
             <h1>Your <span className="text-gradient">movie </span> dictionary 🎬</h1>
-            <h2>Type it. Find it.</h2>
+            <div className="center">
+            <h1 className='content-center'>Type it. Find it.</h1>
+            {/* <h1 className='content-center'>Watch it. Enjoy it.</h1>  */}
+            </div>
             <Search searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
           <br>
           </br>
