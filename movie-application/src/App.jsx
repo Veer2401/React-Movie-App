@@ -2,6 +2,13 @@ import React, { use, useEffect, useState } from 'react'
 import Search from './components/Search'
 import MovieCard from './components/MovieCard';
 import { updateSearchCount } from './appwrite';
+// React-Movie-App
+// This is a React application that fetches and displays movies from The Movie Database (TMDB).
+// It allows users to search for movies and view details about them.
+// The application uses the TMDB API to fetch movie data.
+// The API key is stored in a .env.local file and accessed using the VITE_TMDB_API_KEY environment variable.
+// The application also uses Appwrite to update the search count for each movie searched.
+
 
 // API - Application Programming Interface
 // The API key is stored in the .env.local file
