@@ -146,10 +146,13 @@ const App = () => {
           return (b.popularity || 0) - (a.popularity || 0);
         });
 
-        setContentList(sortedResults);
+        // Remove Korean content
+        const filteredResults = sortedResults.filter(item => item.original_language !== 'ko');
 
-        if (sortedResults.length > 0) {
-          await updateSearchCount(query, sortedResults[0]);
+        setContentList(filteredResults);
+
+        if (filteredResults.length > 0) {
+          await updateSearchCount(query, filteredResults[0]);
         }
       } else {
         // Default: show popular movies and TV shows with enhanced Indian content
@@ -181,7 +184,10 @@ const App = () => {
             return (b.popularity || 0) - (a.popularity || 0);
           });
 
-        setContentList(combinedResults);
+        // Remove Korean content
+        const filteredResults = combinedResults.filter(item => item.original_language !== 'ko');
+
+        setContentList(filteredResults);
       }
 
     } catch(error) {
