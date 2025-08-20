@@ -141,38 +141,27 @@
     }
   }
 
-  /* Flip card container and faces */
-  .flip-card {
-    @apply relative w-full h-full cursor-pointer;
+  /* Remove hover-based flip */
+  .movie-card {
     perspective: 1000px;
-    transition: transform 0.2s ease;
+    cursor: pointer;
   }
-
-  .flip-card:hover {
-    transform: scale(1.03);
-    z-index: 30;
-  }
-
-  .flip-inner {
-    display: grid;
-    width: 100%;
+  .card-inner {
+    transition: transform 0.6s;
     transform-style: preserve-3d;
-    transition: transform 0.6s ease;
+    position: relative;
   }
-
-  .flip-card:hover .flip-inner,
-  .flip-card.flipped .flip-inner {
+  /* Flip on hover */
+  .movie-card:hover .card-inner {
     transform: rotateY(180deg);
   }
-
-  .flip-front,
-  .flip-back {
-    grid-area: 1 / 1;
-    width: 100%;
+  .card-front, .card-back {
     backface-visibility: hidden;
+    position: absolute;
+    width: 100%;
+    height: 100%;
   }
-
-  .flip-back {
+  .card-back {
     transform: rotateY(180deg);
   }
 }
@@ -201,4 +190,13 @@
   display: flex;
   flex-direction: column;
   margin-bottom: 0;
+}
+
+.animated-border {
+  transition: box-shadow 0.4s;
+}
+
+.animated-border:hover {
+  box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.5), 0 0 20px 4px #3b82f6;
+  border-radius: 1rem;
 }

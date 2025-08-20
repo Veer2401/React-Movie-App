@@ -86,7 +86,11 @@ const App = () => {
       <div className='wrapper'>
           <header>
            {/* <img src="./logo.png" alt="Hero-Banner" className="w-[400px] h-[300px]" /> */}
-            <img src="./hero.png" alt="Hero-Banner" className="w-[800px] h-auto" />
+            <img
+  src="./hero.png"
+  alt="Hero-Banner"
+  className="w-[1000px] h-auto"
+/>
             <br></br>
             <h1>Cinematic<span className='text-gradient'>X</span></h1>
             <h1>Your <span className="text-gradient">movie </span> dictionary 🎬</h1>
