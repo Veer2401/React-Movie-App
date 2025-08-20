@@ -44,46 +44,58 @@ const MovieCard = ({ movie }) => {
   const watchHref = trailerUrl || (id ? `https://www.themoviedb.org/movie/${id}` : '#');
 
   return (
-    <li
-      className={`movie-card ${isFlipped ? 'flipped' : ''}`}
-      onClick={() => setIsFlipped((prev) => !prev)}
-    >
-      <div className="card-inner">
-        <div className="card-front">
-          {/* Front content */}
-          <img src={poster_path ? `https://image.tmdb.org/t/p/w500${poster_path}` : '/no-movie.png'} alt={title} />
-          <h3>{title}</h3>
-        </div>
-        <div className="card-back">
-          {/* Back content */}
-          <div className='mt-2 text-left'>
-            <h3 className='mb-2'>{title}</h3>
-            <p className='text-gray-100 text-sm line-clamp-[10]'>
-              {overview || 'No description available.'}
-            </p>
-            <div className='content mt-4'>
-              <div className='rating'>
-                <img src="star.svg" alt="Star Icon" />
-                <p>{vote_average ? vote_average.toFixed(1) : 'N/A'}</p>
+    <div className={`flip-card ${isFlipped ? 'flipped' : ''}`} onClick={() => setIsFlipped((prev) => !prev)}>
+      <div className='flip-inner'>
+        <div className='flip-front'>
+          <div className='movie-card'>
+            <img src={poster_path ? `https://image.tmdb.org/t/p/w500${poster_path}` : '/no-movie.png'} alt={title} />
+            <div className='mt-4'>
+              <h3>{title}</h3>
+              <div className='content'>
+                <div className='rating'>
+                  <img src="star.svg" alt="Star Icon" />
+                  <p>{vote_average ? vote_average.toFixed(1) : 'N/A'}</p>
+                </div>
+                <span>•</span>
+                <p className='lang'>{original_language}</p>
+                <span>•</span>
+                <p className='year'>{release_date ? release_date.split('-')[0] : 'N/A'}</p>
               </div>
-              <span>•</span>
-              <p className='lang'>{original_language}</p>
-              <span>•</span>
-              <p className='year'>{release_date ? release_date.split('-')[0] : 'N/A'}</p>
             </div>
-            <a
-              className='mt-4 inline-block bg-white text-black font-semibold px-4 py-2 rounded-md'
-              href={watchHref}
-              target='_blank'
-              rel='noreferrer'
-              onClick={(e) => e.stopPropagation()}
-            >
-              Watch trailer
-            </a>
+          </div>
+        </div>
+
+        <div className='flip-back'>
+          <div className='movie-card'>
+            <div className='mt-2 text-left'>
+              <h3 className='mb-2'>{title}</h3>
+              <p className='text-gray-100 text-sm line-clamp-[10]'>
+                {overview || 'No description available.'}
+              </p>
+              <div className='content mt-4'>
+                <div className='rating'>
+                  <img src="star.svg" alt="Star Icon" />
+                  <p>{vote_average ? vote_average.toFixed(1) : 'N/A'}</p>
+                </div>
+                <span>•</span>
+                <p className='lang'>{original_language}</p>
+                <span>•</span>
+                <p className='year'>{release_date ? release_date.split('-')[0] : 'N/A'}</p>
+              </div>
+              <a
+                className='mt-4 inline-block bg-white text-black font-semibold px-4 py-2 rounded-md'
+                href={watchHref}
+                target='_blank'
+                rel='noreferrer'
+                onClick={(e) => e.stopPropagation()}
+              >
+                Watch trailer
+              </a>
+            </div>
           </div>
         </div>
       </div>
-    </li>
+    </div>
   )
 }
 
