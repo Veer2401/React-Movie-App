@@ -140,6 +140,35 @@
       @apply text-gray-100 font-medium text-base;
     }
   }
+
+  /* Flip card container and faces */
+  .flip-card {
+    @apply relative w-full h-full cursor-pointer;
+    perspective: 1000px;
+  }
+
+  .flip-inner {
+    display: grid;
+    width: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.6s ease;
+  }
+
+  .flip-card:hover .flip-inner,
+  .flip-card.flipped .flip-inner {
+    transform: rotateY(180deg);
+  }
+
+  .flip-front,
+  .flip-back {
+    grid-area: 1 / 1;
+    width: 100%;
+    backface-visibility: hidden;
+  }
+
+  .flip-back {
+    transform: rotateY(180deg);
+  }
 }
 
 @utility text-gradient {
