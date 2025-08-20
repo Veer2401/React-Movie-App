@@ -197,7 +197,7 @@ const App = () => {
   }, [searchTerm]);
 
   return (
-    <main>
+    <main className="fade-in-screen">
 
       {/* <div className="logo">
         <img src="./logo.png" alt="Logo" className="w-[400px] h-[400px]" />
@@ -224,7 +224,7 @@ const App = () => {
           </header>
 
           <section className='all-movies'>
-  <h2 className='mt-[40px]'>Movies, TV Shows & Bollywood</h2>
+  <h2 className='mt-[40px]'>Movies, TV Shows & More!</h2>
   
   {isLoading ? (
     <div className="flex justify-center items-center h-32">
