@@ -12,17 +12,22 @@ const API_OPTIONS = {
 }
 
 const MovieCard = ({ movie }) => {
-  const { id, title, vote_average, poster_path, release_date, original_language, overview } = movie || {};
+  const { id, title, name, vote_average, poster_path, release_date, first_air_date, original_language, overview, media_type } = movie || {};
 
   const [isFlipped, setIsFlipped] = useState(false);
   const [trailerUrl, setTrailerUrl] = useState('');
 
+  // Use title for movies, name for TV shows
+  const displayTitle = title || name;
+  // Use release_date for movies, first_air_date for TV shows
+  const displayDate = release_date || first_air_date;
+
   useEffect(() => {
     let isCancelled = false;
     const fetchTrailer = async () => {
-      if (!id) return;
+      if (!id || !media_type) return;
       try {
-        const response = await fetch(`${API_BASE_URL}/movie/${id}/videos`, API_OPTIONS);
+        const response = await fetch(`${API_BASE_URL}/${media_type}/${id}/videos`, API_OPTIONS);
         if (!response.ok) return;
         const data = await response.json();
         const trailer = (data.results || []).find(
@@ -39,18 +44,18 @@ const MovieCard = ({ movie }) => {
     return () => {
       isCancelled = true;
     };
-  }, [id]);
+  }, [id, media_type]);
 
-  const watchHref = trailerUrl || (id ? `https://www.themoviedb.org/movie/${id}` : '#');
+  const watchHref = trailerUrl || (id ? `https://www.themoviedb.org/${media_type}/${id}` : '#');
 
   return (
     <div className={`flip-card ${isFlipped ? 'flipped' : ''}`} onClick={() => setIsFlipped((prev) => !prev)}>
       <div className='flip-inner'>
         <div className='flip-front'>
           <div className='movie-card'>
-            <img src={poster_path ? `https://image.tmdb.org/t/p/w500${poster_path}` : '/no-movie.png'} alt={title} />
+            <img src={poster_path ? `https://image.tmdb.org/t/p/w500${poster_path}` : '/no-movie.png'} alt={displayTitle} />
             <div className='mt-4'>
-              <h3>{title}</h3>
+              <h3>{displayTitle}</h3>
               <div className='content'>
                 <div className='rating'>
                   <img src="star.svg" alt="Star Icon" />
@@ -59,7 +64,9 @@ const MovieCard = ({ movie }) => {
                 <span>•</span>
                 <p className='lang'>{original_language}</p>
                 <span>•</span>
-                <p className='year'>{release_date ? release_date.split('-')[0] : 'N/A'}</p>
+                <p className='year'>{displayDate ? displayDate.split('-')[0] : 'N/A'}</p>
+                <span>•</span>
+                <p className='media-type'>{media_type === 'tv' ? 'TV Series' : 'Movie'}</p>
               </div>
             </div>
           </div>
@@ -68,7 +75,7 @@ const MovieCard = ({ movie }) => {
         <div className='flip-back'>
           <div className='movie-card'>
             <div className='mt-2 text-left'>
-              <h3 className='mb-2'>{title}</h3>
+              <h3 className='mb-2'>{displayTitle}</h3>
               <p className='text-gray-100 text-sm line-clamp-[10]'>
                 {overview || 'No description available.'}
               </p>
@@ -80,7 +87,9 @@ const MovieCard = ({ movie }) => {
                 <span>•</span>
                 <p className='lang'>{original_language}</p>
                 <span>•</span>
-                <p className='year'>{release_date ? release_date.split('-')[0] : 'N/A'}</p>
+                <p className='year'>{displayDate ? displayDate.split('-')[0] : 'N/A'}</p>
+                <span>•</span>
+                <p className='media-type'>{media_type === 'tv' ? 'TV Series' : 'Movie'}</p>
               </div>
               <a
                 className='mt-4 inline-block bg-white text-black font-semibold px-4 py-2 rounded-md'

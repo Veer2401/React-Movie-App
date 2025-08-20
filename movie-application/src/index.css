@@ -139,6 +139,10 @@
     & .content .year {
       @apply text-gray-100 font-medium text-base;
     }
+
+    & .content .media-type {
+      @apply text-gray-100 font-medium text-base;
+    }
   }
 
   /* Flip card container and faces */

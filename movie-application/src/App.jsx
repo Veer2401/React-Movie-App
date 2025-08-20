@@ -31,48 +31,71 @@ const App = () => {
   
   const [searchTerm,setSearchTerm] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
-  const [movieList, setMovieList] = useState([]);
+  const [contentList, setContentList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const fetchMovies = async (query = '') => {
+  const fetchContent = async (query = '') => {
 
     setIsLoading(true);
     setErrorMessage('');
     try{
-      const endpoint = query
-      ? `${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}`
-      : `${API_BASE_URL}/discover/movie?sort_by=popularity.desc`;
+      if (query) {
+        // Search both movies and TV shows
+        const [movieResponse, tvResponse] = await Promise.all([
+          fetch(`${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}`, API_OPTIONS),
+          fetch(`${API_BASE_URL}/search/tv?query=${encodeURIComponent(query)}`, API_OPTIONS)
+        ]);
 
-      const response = await fetch(endpoint, API_OPTIONS);
+        const [movieData, tvData] = await Promise.all([
+          movieResponse.json(),
+          tvResponse.json()
+        ]);
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch movies');
-      }
+        // Combine and merge results
+        const movies = (movieData.results || []).map(item => ({ ...item, media_type: 'movie' }));
+        const tvShows = (tvData.results || []).map(item => ({ ...item, media_type: 'tv' }));
+        
+        // Sort by popularity and combine
+        const combinedResults = [...movies, ...tvShows]
+          .sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
 
-      const data = await response.json();
+        setContentList(combinedResults);
 
-      if(data.Response === 'False') {
-        setErrorMessage(data.Error || 'Unknown error occurred');
-        setMovieList([]);
-        return;
-      }
+        if (combinedResults.length > 0) {
+          await updateSearchCount(query, combinedResults[0]);
+        }
+      } else {
+        // Default: show popular movies and TV shows
+        const [movieResponse, tvResponse] = await Promise.all([
+          fetch(`${API_BASE_URL}/discover/movie?sort_by=popularity.desc`, API_OPTIONS),
+          fetch(`${API_BASE_URL}/discover/tv?sort_by=popularity.desc`, API_OPTIONS)
+        ]);
 
-      setMovieList(data.results || []);
+        const [movieData, tvData] = await Promise.all([
+          movieResponse.json(),
+          tvResponse.json()
+        ]);
 
-      if(query && data.results.length > 0){
-        await updateSearchCount(query, data.results[0]);
+        const movies = (movieData.results || []).map(item => ({ ...item, media_type: 'movie' }));
+        const tvShows = (tvData.results || []).map(item => ({ ...item, media_type: 'tv' }));
+        
+        // Combine and sort by popularity
+        const combinedResults = [...movies, ...tvShows]
+          .sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+
+        setContentList(combinedResults);
       }
 
     } catch(error) {
-      console.error(`Error fetching movies:, ${error}`);
-      setErrorMessage('Failed to fetch movies');
+      console.error(`Error fetching content: ${error}`);
+      setErrorMessage('Failed to fetch content');
     } finally {
       setIsLoading(false);
     }
   }
 
   useEffect(() => {
-    fetchMovies(searchTerm);
+    fetchContent(searchTerm);
   }, [searchTerm]);
 
   return (
@@ -85,7 +108,7 @@ const App = () => {
       <div className="pattern" />
       <div className='wrapper'>
           <header>
-           {/* <img src="./logo.png" alt="Hero-Banner" className="w-[400px] h-[300px]" /> */}
+           {/* <img src="./logo.png" alt="Hero-Banner" className="w-[400px] h-[400px]" /> */}
             <img
   src="./hero.png"
   alt="Hero-Banner"
@@ -105,7 +128,7 @@ const App = () => {
           </header>
 
           <section className='all-movies'>
-            <h2 className='mt-[40px]'>All Movies</h2>
+            <h2 className='mt-[40px]'>All Movies & TV Shows</h2>
             
             {isLoading ? (
               <p className='text-white'>Loading...</p>
@@ -113,8 +136,8 @@ const App = () => {
               <p className='text-red-500'>{errorMessage}</p>
             ) : (
               <ul>
-                {movieList.map((movie) => (
-                  <MovieCard key={movie.id} movie={movie} />
+                {contentList.map((content) => (
+                  <MovieCard key={`${content.media_type}-${content.id}`} movie={content} />
                 ))}
               </ul>
             )}
