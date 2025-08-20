@@ -35,12 +35,28 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const fetchContent = async (query = '') => {
-
     setIsLoading(true);
     setErrorMessage('');
-    try{
+    try {
       if (query) {
-        // Enhanced search with Hindi movies as top priority
+        // Check for "netflix" in the query
+        const isNetflixQuery = query.toLowerCase().includes('netflix');
+        let netflixShows = [];
+        if (isNetflixQuery) {
+          // Fetch Netflix originals (network ID 213)
+          const netflixResponse = await fetch(
+            `${API_BASE_URL}/discover/tv?with_networks=213&sort_by=popularity.desc&page_size=20`,
+            API_OPTIONS
+          );
+          const netflixData = await netflixResponse.json();
+          netflixShows = (netflixData.results || []).map(item => ({
+            ...item,
+            media_type: 'tv',
+            priority: 0, // Highest priority
+            isNetflix: true
+          }));
+        }
+
         const [hindiMovieResponse, regionalMovieResponse, movieResponse, tvResponse] = await Promise.all([
           // First priority: Hindi movies with exact title match
           fetch(`${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}&region=IN&with_origin_country=IN&page_size=20`, API_OPTIONS),
@@ -89,19 +105,19 @@ const App = () => {
         }));
         
         // Combine all results and remove duplicates
-        const allResults = [...hindiMovies, ...regionalMovies, ...movies, ...tvShows];
+        const allResults = [...netflixShows, ...hindiMovies, ...regionalMovies, ...movies, ...tvShows];
         const uniqueResults = allResults.filter((item, index, arr) => 
           arr.findIndex(x => x.id === item.id) === index
         );
         
-        // Smart sorting: prioritize Hindi content, then relevance, then popularity
+        // Smart sorting: prioritize Netflix, then Hindi, then relevance, then popularity
         const sortedResults = uniqueResults.sort((a, b) => {
-          // First: Priority level (Hindi movies first)
-          if (a.priority !== b.priority) {
-            return a.priority - b.priority;
+          // Netflix priority
+          if ((a.isNetflix ? 0 : a.priority) !== (b.isNetflix ? 0 : b.priority)) {
+            return (a.isNetflix ? 0 : a.priority) - (b.isNetflix ? 0 : b.priority);
           }
           
-          // Second: Exact title match gets higher priority
+          // Exact title match
           const queryLower = query.toLowerCase();
           const aTitle = (a.title || a.name || '').toLowerCase();
           const bTitle = (b.title || b.name || '').toLowerCase();
@@ -112,21 +128,21 @@ const App = () => {
           if (aExactMatch && !bExactMatch) return -1;
           if (!aExactMatch && bExactMatch) return 1;
           
-          // Third: Starts with query gets higher priority
+          // Starts with query
           const aStartsWith = aTitle.startsWith(queryLower);
           const bStartsWith = bTitle.startsWith(queryLower);
           
           if (aStartsWith && !bStartsWith) return -1;
           if (!aStartsWith && bStartsWith) return 1;
           
-          // Fourth: Contains query
+          // Contains query
           const aContains = aTitle.includes(queryLower);
           const bContains = bTitle.includes(queryLower);
           
           if (aContains && !bContains) return -1;
           if (!aContains && bContains) return 1;
           
-          // Finally: Sort by popularity
+          // Popularity
           return (b.popularity || 0) - (a.popularity || 0);
         });
 
