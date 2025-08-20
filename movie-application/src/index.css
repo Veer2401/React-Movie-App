@@ -145,6 +145,12 @@
   .flip-card {
     @apply relative w-full h-full cursor-pointer;
     perspective: 1000px;
+    transition: transform 0.2s ease;
+  }
+
+  .flip-card:hover {
+    transform: scale(1.03);
+    z-index: 30;
   }
 
   .flip-inner {
