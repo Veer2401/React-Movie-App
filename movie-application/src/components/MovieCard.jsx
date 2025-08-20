@@ -12,7 +12,7 @@ const API_OPTIONS = {
 }
 
 const MovieCard = ({ movie }) => {
-  const { id, title, name, vote_average, poster_path, release_date, first_air_date, original_language, overview, media_type, isHindi } = movie || {};
+  const { id, title, name, vote_average, poster_path, release_date, first_air_date, original_language, overview, media_type, isHindi, isNetflix } = movie || {};
 
   const [isFlipped, setIsFlipped] = useState(false);
   const [trailerUrl, setTrailerUrl] = useState('');
@@ -49,30 +49,26 @@ const MovieCard = ({ movie }) => {
   const watchHref = trailerUrl || (id ? `https://www.themoviedb.org/${media_type}/${id}` : '#');
 
   return (
-    <div className={`flip-card ${isFlipped ? 'flipped' : ''}`} onClick={() => setIsFlipped((prev) => !prev)}>
-      <div className='flip-inner'>
-        <div className='flip-front'>
-          <div className={`movie-card ${isHindi ? 'hindi-movie' : ''}`}>
-            <img src={poster_path ? `https://image.tmdb.org/t/p/w500${poster_path}` : '/no-movie.png'} alt={displayTitle} />
-            <div className='mt-4'>
-              <h3>{displayTitle}</h3>
-              <div className='content'>
-                <div className='rating'>
-                  <img src="star.svg" alt="Star Icon" />
-                  <p>{vote_average ? vote_average.toFixed(1) : 'N/A'}</p>
-                </div>
-                <span>•</span>
-                <p className='lang'>{original_language}</p>
-                <span>•</span>
-                <p className='year'>{displayDate ? displayDate.split('-')[0] : 'N/A'}</p>
-                <span>•</span>
-                <p className='media-type'>{media_type === 'tv' ? 'TV Series' : 'Movie'}</p>
-              </div>
+    <li className="movie-card flip-card">
+      <div className="flip-inner">
+        <div className="flip-front">
+          {/* Poster and other content */}
+          <img src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title || movie.name} />
+          <h3>{movie.title || movie.name}</h3>
+          <div className='content'>
+            <div className='rating'>
+              <img src="star.svg" alt="Star Icon" />
+              <p>{vote_average ? vote_average.toFixed(1) : 'N/A'}</p>
             </div>
+            <span>•</span>
+            <p className='lang'>{original_language}</p>
+            <span>•</span>
+            <p className='year'>{displayDate ? displayDate.split('-')[0] : 'N/A'}</p>
+            <span>•</span>
+            <p className='media-type'>{media_type === 'tv' ? 'TV Series' : 'Movie'}</p>
           </div>
         </div>
-
-        <div className='flip-back'>
+        <div className="flip-back">
           <div className={`movie-card ${isHindi ? 'hindi-movie' : ''}`}>
             <div className='mt-2 text-left'>
               <h3 className='mb-2'>{displayTitle}</h3>
@@ -104,7 +100,7 @@ const MovieCard = ({ movie }) => {
           </div>
         </div>
       </div>
-    </div>
+    </li>
   )
 }
 

@@ -12,6 +12,7 @@ const Search = ({searchTerm, setSearchTerm}) => {
                 placeholder='Search'
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
+                className="cursor-pointer"
             />
         </div>
     </div>

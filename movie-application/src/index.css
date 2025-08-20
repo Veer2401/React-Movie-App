@@ -94,6 +94,10 @@
 
     & input {
       @apply w-full bg-transparent py-2 sm:pr-10 pl-10 text-base text-gray-200 placeholder-light-200 outline-hidden;
+
+      &:hover {
+        cursor: pointer;
+      }
     }
   }
 
@@ -194,6 +198,39 @@
 
   .flip-back {
     transform: rotateY(180deg);
+  }
+
+  .netflix-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: #e50914;
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: bold;
+    padding: 4px 10px;
+    border-radius: 8px;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    letter-spacing: 1px;
+    font-family: "Bebas Neue", Arial, sans-serif;
+  }
+
+  .loader {
+    display: inline-block;
+    width: 48px;
+    height: 48px;
+    border: 5px solid #3b82f6;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s linear infinite;
+    margin: auto;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 }
 

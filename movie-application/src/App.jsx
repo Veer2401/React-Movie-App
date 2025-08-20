@@ -224,21 +224,22 @@ const App = () => {
           </header>
 
           <section className='all-movies'>
-            <h2 className='mt-[40px]'>Movies, TV Shows & Bollywood</h2>
-            
-            {isLoading ? (
-              <p className='text-white'>Loading...</p>
-            ) : errorMessage ? (
-              <p className='text-red-500'>{errorMessage}</p>
-            ) : (
-              <ul>
-                {contentList.map((content) => (
-                  <MovieCard key={`${content.media_type}-${content.id}`} movie={content} />
-                ))}
-              </ul>
-            )}
-          
-          </section>
+  <h2 className='mt-[40px]'>Movies, TV Shows & Bollywood</h2>
+  
+  {isLoading ? (
+    <div className="flex justify-center items-center h-32">
+      <span className="loader"></span>
+    </div>
+  ) : errorMessage ? (
+    <p className='text-red-500'>{errorMessage}</p>
+  ) : (
+    <ul>
+      {contentList.map((content) => (
+        <MovieCard key={`${content.media_type}-${content.id}`} movie={content} />
+      ))}
+    </ul>
+  )}
+</section>
 
           
       </div>
