@@ -40,24 +40,35 @@ const App = () => {
     setErrorMessage('');
     try{
       if (query) {
-        // Search both movies and TV shows
-        const [movieResponse, tvResponse] = await Promise.all([
-          fetch(`${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}`, API_OPTIONS),
-          fetch(`${API_BASE_URL}/search/tv?query=${encodeURIComponent(query)}`, API_OPTIONS)
+        // Search movies and TV shows with enhanced regional support
+        const [movieResponse, tvResponse, regionalMovieResponse] = await Promise.all([
+          fetch(`${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}&language=hi-IN&region=IN`, API_OPTIONS),
+          fetch(`${API_BASE_URL}/search/tv?query=${encodeURIComponent(query)}&language=hi-IN`, API_OPTIONS),
+          // Additional search for regional Indian movies
+          fetch(`${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}&language=hi-IN&with_origin_country=IN`, API_OPTIONS)
         ]);
 
-        const [movieData, tvData] = await Promise.all([
+        const [movieData, tvData, regionalData] = await Promise.all([
           movieResponse.json(),
-          tvResponse.json()
+          tvResponse.json(),
+          regionalMovieResponse.json()
         ]);
 
-        // Combine and merge results
+        // Combine and merge results with priority for regional content
         const movies = (movieData.results || []).map(item => ({ ...item, media_type: 'movie' }));
         const tvShows = (tvData.results || []).map(item => ({ ...item, media_type: 'tv' }));
+        const regionalMovies = (regionalData.results || []).map(item => ({ ...item, media_type: 'movie', isRegional: true }));
         
-        // Sort by popularity and combine
-        const combinedResults = [...movies, ...tvShows]
-          .sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+        // Combine all results and sort by popularity, prioritizing regional content
+        const combinedResults = [...regionalMovies, ...movies, ...tvShows]
+          .filter((item, index, arr) => arr.findIndex(x => x.id === item.id) === index) // Remove duplicates
+          .sort((a, b) => {
+            // Prioritize regional content
+            if (a.isRegional && !b.isRegional) return -1;
+            if (!a.isRegional && b.isRegional) return 1;
+            // Then sort by popularity
+            return (b.popularity || 0) - (a.popularity || 0);
+          });
 
         setContentList(combinedResults);
 
@@ -65,23 +76,34 @@ const App = () => {
           await updateSearchCount(query, combinedResults[0]);
         }
       } else {
-        // Default: show popular movies and TV shows
-        const [movieResponse, tvResponse] = await Promise.all([
-          fetch(`${API_BASE_URL}/discover/movie?sort_by=popularity.desc`, API_OPTIONS),
-          fetch(`${API_BASE_URL}/discover/tv?sort_by=popularity.desc`, API_OPTIONS)
+        // Default: show popular movies and TV shows with enhanced Indian content
+        const [movieResponse, tvResponse, indianMovieResponse] = await Promise.all([
+          fetch(`${API_BASE_URL}/discover/movie?sort_by=popularity.desc&language=hi-IN`, API_OPTIONS),
+          fetch(`${API_BASE_URL}/discover/tv?sort_by=popularity.desc&language=hi-IN`, API_OPTIONS),
+          // Get popular Indian movies
+          fetch(`${API_BASE_URL}/discover/movie?sort_by=popularity.desc&with_origin_country=IN&language=hi-IN`, API_OPTIONS)
         ]);
 
-        const [movieData, tvData] = await Promise.all([
+        const [movieData, tvData, indianData] = await Promise.all([
           movieResponse.json(),
-          tvResponse.json()
+          tvResponse.json(),
+          indianMovieResponse.json()
         ]);
 
         const movies = (movieData.results || []).map(item => ({ ...item, media_type: 'movie' }));
         const tvShows = (tvData.results || []).map(item => ({ ...item, media_type: 'tv' }));
+        const indianMovies = (indianData.results || []).map(item => ({ ...item, media_type: 'movie', isRegional: true }));
         
-        // Combine and sort by popularity
-        const combinedResults = [...movies, ...tvShows]
-          .sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+        // Combine and sort by popularity, prioritizing Indian content
+        const combinedResults = [...indianMovies, ...movies, ...tvShows]
+          .filter((item, index, arr) => arr.findIndex(x => x.id === item.id) === index) // Remove duplicates
+          .sort((a, b) => {
+            // Prioritize Indian content
+            if (a.isRegional && !b.isRegional) return -1;
+            if (!a.isRegional && b.isRegional) return 1;
+            // Then sort by popularity
+            return (b.popularity || 0) - (a.popularity || 0);
+          });
 
         setContentList(combinedResults);
       }
@@ -116,7 +138,7 @@ const App = () => {
 />
             <br></br>
             <h1>Cinematic<span className='text-gradient'>X</span></h1>
-            <h1>Your <span className="text-gradient">movie </span> dictionary 🎬</h1>
+            <h1>Your <span className='text-gradient'>movie & series </span> dictionary 🎬</h1>
             <div className="center">
             <h1 className='content-center'>Type it. Find it.</h1>
             {/* <h1 className='content-center'>Watch it. Enjoy it.</h1>  */}
@@ -128,7 +150,7 @@ const App = () => {
           </header>
 
           <section className='all-movies'>
-            <h2 className='mt-[40px]'>All Movies & TV Shows</h2>
+            <h2 className='mt-[40px]'>Movies, TV Shows & Bollywood</h2>
             
             {isLoading ? (
               <p className='text-white'>Loading...</p>
