@@ -12,7 +12,7 @@ const API_OPTIONS = {
 }
 
 const MovieCard = ({ movie }) => {
-  const { id, title, name, vote_average, poster_path, release_date, first_air_date, original_language, overview, media_type } = movie || {};
+  const { id, title, name, vote_average, poster_path, release_date, first_air_date, original_language, overview, media_type, isHindi } = movie || {};
 
   const [isFlipped, setIsFlipped] = useState(false);
   const [trailerUrl, setTrailerUrl] = useState('');
@@ -52,7 +52,7 @@ const MovieCard = ({ movie }) => {
     <div className={`flip-card ${isFlipped ? 'flipped' : ''}`} onClick={() => setIsFlipped((prev) => !prev)}>
       <div className='flip-inner'>
         <div className='flip-front'>
-          <div className='movie-card'>
+          <div className={`movie-card ${isHindi ? 'hindi-movie' : ''}`}>
             <img src={poster_path ? `https://image.tmdb.org/t/p/w500${poster_path}` : '/no-movie.png'} alt={displayTitle} />
             <div className='mt-4'>
               <h3>{displayTitle}</h3>
@@ -73,7 +73,7 @@ const MovieCard = ({ movie }) => {
         </div>
 
         <div className='flip-back'>
-          <div className='movie-card'>
+          <div className={`movie-card ${isHindi ? 'hindi-movie' : ''}`}>
             <div className='mt-2 text-left'>
               <h3 className='mb-2'>{displayTitle}</h3>
               <p className='text-gray-100 text-sm line-clamp-[10]'>
