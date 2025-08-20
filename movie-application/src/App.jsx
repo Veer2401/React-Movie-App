@@ -91,7 +91,7 @@ const App = () => {
             <h1>Cinematic<span className='text-gradient'>X</span></h1>
             <h1>Your <span className="text-gradient">movie </span> dictionary 🎬</h1>
             <div className="center">
-            <h1 className='content-center'>Type it. Find it. And enjoy </h1>
+            <h1 className='content-center'>Type it. Find it.</h1>
             {/* <h1 className='content-center'>Watch it. Enjoy it.</h1>  */}
             </div>
             <Search searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
