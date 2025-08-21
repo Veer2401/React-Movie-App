@@ -9,14 +9,6 @@ import { isProduction } from './utils/env.js';
 const API_BASE_URL = 'https://api.themoviedb.org/3';
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
-const API_OPTIONS = {
-  method: 'GET',
-  headers: {
-    accept: 'application/json',
-    Authorization: `Bearer ${API_KEY}`
-  }
-}
-
 // TMDB watch provider ids
 const PROVIDER = {
   NETFLIX: 8,
@@ -33,6 +25,9 @@ const App = () => {
   // Abort controller for in-flight search
   const searchAbortRef = useRef(null)
 
+  // Simple in-memory cache for search results in this session
+  const searchCacheRef = useRef(new Map())
+
   const markNetflixForTvItems = async (tvItems) => {
     const controller = new AbortController()
     const toCheck = tvItems.slice(0, 8)
@@ -40,7 +35,7 @@ const App = () => {
       const marked = await Promise.all(
         toCheck.map(async (item) => {
           try {
-            const res = await fetch(`${API_BASE_URL}/tv/${item.id}/watch/providers`, { ...API_OPTIONS, signal: controller.signal })
+            const res = await fetch(`${API_BASE_URL}/tv/${item.id}/watch/providers`, { method: 'GET', headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` }, signal: controller.signal })
             if (!res.ok) return item
             const data = await res.json()
             const providers = data?.results?.IN?.flatrate || data?.results?.IN?.ads || []
@@ -69,14 +64,23 @@ const App = () => {
     setErrorMessage('')
 
     try {
+      const normalizedKey = query.trim().toLowerCase()
+
+      // Serve from cache if available (only for non-empty queries)
+      if (normalizedKey && searchCacheRef.current.has(normalizedKey)) {
+        setMovieList(searchCacheRef.current.get(normalizedKey))
+        setIsLoading(false)
+        return
+      }
+
       if (!query) {
         // Default feed: mix of Hindi movies, Netflix/Hotstar/Prime TV, and popular movies
         const [hindiRes, moviesRes, hotstarRes, primeRes, netflixRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/discover/movie?with_origin_country=IN&sort_by=popularity.desc&page=1`, { ...API_OPTIONS, signal: controller.signal }),
-          fetch(`${API_BASE_URL}/discover/movie?sort_by=popularity.desc&page=1`, { ...API_OPTIONS, signal: controller.signal }),
-          fetch(`${API_BASE_URL}/discover/tv?with_watch_providers=${PROVIDER.HOTSTAR}&watch_region=IN&sort_by=popularity.desc&page=1`, { ...API_OPTIONS, signal: controller.signal }),
-          fetch(`${API_BASE_URL}/discover/tv?with_watch_providers=${PROVIDER.PRIME}&watch_region=IN&sort_by=popularity.desc&page=1`, { ...API_OPTIONS, signal: controller.signal }),
-          fetch(`${API_BASE_URL}/discover/tv?with_watch_providers=${PROVIDER.NETFLIX}&watch_region=IN&sort_by=popularity.desc&page=1`, { ...API_OPTIONS, signal: controller.signal }),
+          fetch(`${API_BASE_URL}/discover/movie?with_origin_country=IN&sort_by=popularity.desc&page=1`, { method: 'GET', headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` }, signal: controller.signal }),
+          fetch(`${API_BASE_URL}/discover/movie?sort_by=popularity.desc&page=1`, { method: 'GET', headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` }, signal: controller.signal }),
+          fetch(`${API_BASE_URL}/discover/tv?with_watch_providers=${PROVIDER.HOTSTAR}&watch_region=IN&sort_by=popularity.desc&page=1`, { method: 'GET', headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` }, signal: controller.signal }),
+          fetch(`${API_BASE_URL}/discover/tv?with_watch_providers=${PROVIDER.PRIME}&watch_region=IN&sort_by=popularity.desc&page=1`, { method: 'GET', headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` }, signal: controller.signal }),
+          fetch(`${API_BASE_URL}/discover/tv?with_watch_providers=${PROVIDER.NETFLIX}&watch_region=IN&sort_by=popularity.desc&page=1`, { method: 'GET', headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` }, signal: controller.signal }),
         ])
 
         if (controller.signal.aborted) return
@@ -121,13 +125,14 @@ const App = () => {
         }
 
         setMovieList(interleaved)
+        setIsLoading(false)
         return
       }
 
       // Search: movies + TV concurrently (fast); label Netflix in background
       const [movieRes, tvRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}&page=1`, { ...API_OPTIONS, signal: controller.signal }),
-        fetch(`${API_BASE_URL}/search/tv?query=${encodeURIComponent(query)}&page=1`, { ...API_OPTIONS, signal: controller.signal }),
+        fetch(`${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}&page=1`, { method: 'GET', headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` }, signal: controller.signal }),
+        fetch(`${API_BASE_URL}/search/tv?query=${encodeURIComponent(query)}&page=1`, { method: 'GET', headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` }, signal: controller.signal }),
       ])
 
       if (controller.signal.aborted) return
@@ -164,26 +169,17 @@ const App = () => {
 
       setMovieList(mixed.length ? mixed : [...tvShows, ...movies])
 
-      // Background enrichment: label Netflix for first TV items after render
-      ;(async () => {
-        try {
-          const labeled = await markNetflixForTvItems(tvShows)
-          setMovieList((current) =>
-            current.map((item) => {
-              if (item.media_type !== 'tv') return item
-              const match = labeled.find((t) => t.id === item.id)
-              return match ? { ...item, isNetflix: match.isNetflix } : item
-            })
-          )
-        } catch {}
-      })()
+      // Cache the results for this query for faster subsequent loads
+      if (normalizedKey) {
+        searchCacheRef.current.set(normalizedKey, mixed.length ? mixed : [...tvShows, ...movies])
+      }
 
       if (query && (mixed.length ? mixed : [...tvShows, ...movies]).length > 0) {
         try {
           await updateSearchCount(query, (mixed.length ? mixed : [...tvShows, ...movies])[0]);
         } catch (error) {
           console.error('Appwrite API error:', error);
-          // Don't show this error to user as it's not critical
+          // Not critical for UX
         }
       }
     } catch (error) {
@@ -199,7 +195,7 @@ const App = () => {
   useEffect(() => {
     const id = setTimeout(() => {
       fetchMovies(searchTerm)
-    }, 50)
+    }, 25)
     return () => clearTimeout(id)
   }, [searchTerm])
 
@@ -254,17 +250,12 @@ const App = () => {
           ) : (
             <ul>
               {movieList.map((item) => (
-                item.media_type === 'song' ? (
-                  <SongCard key={`song-${item.id}`} song={item} />
-                ) : (
-                  <MovieCard key={`${item.media_type || 'movie'}-${item.id}`} movie={item} />
-                )
+                <MovieCard key={`${item.media_type || 'movie'}-${item.id}`} movie={item} />
               ))}
             </ul>
           )}
         </section>
         <div className="footer">
-          <h2>Made with  ❤️  by  <a href="https://github.com/Veer2401" target="_blank" rel="noopener noreferrer"> Veer  </a></h2>
           <p>Powered by <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer">TMDB</a></p>
           <p>Source code on <a href="https://github.com/Veer2401/React-Movie-App" target="_blank" rel="noopener noreferrer">GitHub</a></p>
           <p>Copyright © 2025 Veer Harischandrakar</p>
@@ -273,4 +264,5 @@ const App = () => {
     </main>
   )
 }
+
 export default App
