@@ -68,7 +68,7 @@ npm run dev
 
 ## 🎮 Usage
 
--   Open app in browser (`http://localhost:5173`)\
+
 -   Start typing in the search bar → Suggestions dropdown will appear\
 -   Click a suggestion or press enter to fetch results\
 -   Hover on a card to flip and see details/trailer\
