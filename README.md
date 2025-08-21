@@ -13,7 +13,8 @@ The idea was simple → **search for movies, check details, explore trending tit
 - 🔥 See trending & popular movies on the homepage  
 - 🧭 Navigate between pages with React Router  
 - 📱 Fully responsive (works on mobile too)  
-- 🧼 Smooth UX with loading states & empty states  
+- 🧼 Smooth UX with loading states & empty states
+- 🍿 Shows information about the movie and trailers
 
 ---
 
