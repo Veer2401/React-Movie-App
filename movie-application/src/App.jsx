@@ -26,10 +26,41 @@ const App = () => {
     setErrorMessage('')
 
     try {
-      const endpoint = query
-        ? `${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}`
-        : `${API_BASE_URL}/discover/movie?sort_by=popularity.desc`;
+      if (!query) {
+        // Fetch popular Hindi movies and general popular movies
+        const [hindiRes, generalRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/discover/movie?with_origin_country=IN&sort_by=popularity.desc`, API_OPTIONS),
+          fetch(`${API_BASE_URL}/discover/movie?sort_by=popularity.desc`, API_OPTIONS),
+        ])
 
+        if (!hindiRes.ok || !generalRes.ok) {
+          throw new Error('Failed to fetch movies')
+        }
+
+        const [hindiData, generalData] = await Promise.all([
+          hindiRes.json(),
+          generalRes.json(),
+        ])
+
+        const hindiMovies = (hindiData.results || [])
+        const generalMovies = (generalData.results || [])
+
+        // Merge with Hindi first, then general, removing duplicates by id
+        const merged = [...hindiMovies, ...generalMovies]
+        const seen = new Set()
+        const unique = []
+        for (const m of merged) {
+          if (!seen.has(m.id)) {
+            seen.add(m.id)
+            unique.push(m)
+          }
+        }
+
+        setMovieList(unique.slice(0, 20))
+        return
+      }
+
+      const endpoint = `${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}`
       const response = await fetch(endpoint, API_OPTIONS)
       if (!response.ok) {
         throw new Error('Failed to fetch movies')
