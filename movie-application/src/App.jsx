@@ -42,115 +42,130 @@ const robustFetch = async (url, options, retries = 2) => {
   }
 };
 
+// Simple number-to-words map for 0-99 (expand as needed)
+const numberWords = {
+  0: 'zero', 1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five', 6: 'six', 7: 'seven', 8: 'eight', 9: 'nine',
+  10: 'ten', 11: 'eleven', 12: 'twelve', 13: 'thirteen', 14: 'fourteen', 15: 'fifteen', 16: 'sixteen', 17: 'seventeen', 18: 'eighteen', 19: 'nineteen',
+  20: 'twenty', 21: 'twenty-one', 22: 'twenty-two', 23: 'twenty-three', 24: 'twenty-four', 25: 'twenty-five', 26: 'twenty-six', 27: 'twenty-seven', 28: 'twenty-eight', 29: 'twenty-nine',
+  30: 'thirty', 31: 'thirty-one'
+  // ...add more if needed
+};
+
+function numbersToWords(str) {
+  return str.replace(/\b\d+\b/g, (num) => {
+    const n = parseInt(num, 10);
+    return numberWords[n] || num;
+  });
+}
+
 const fetchContent = async (query = '') => {
   setIsLoading(true);
   setErrorMessage('');
   try {
-    if (query) {
-      const isNetflixQuery = query.toLowerCase().includes('netflix');
-      let netflixShows = [];
-      if (isNetflixQuery) {
-        const netflixData = await robustFetch(
-          `${API_BASE_URL}/discover/tv?with_networks=213&sort_by=popularity.desc&page_size=20`,
-          API_OPTIONS
-        );
-        netflixShows = (netflixData.results || []).map(item => ({
+    // Convert numbers in query to words
+    const queryWithWords = numbersToWords(query);
+
+    // If query and queryWithWords are different, search with both
+    const searchQueries = [query];
+    if (queryWithWords !== query) searchQueries.push(queryWithWords);
+
+    let allResults = [];
+    for (const q of searchQueries) {
+      if (q) {
+        const isNetflixQuery = q.toLowerCase().includes('netflix');
+        let netflixShows = [];
+        if (isNetflixQuery) {
+          const netflixData = await robustFetch(
+            `${API_BASE_URL}/discover/tv?with_networks=213&sort_by=popularity.desc&page_size=20`,
+            API_OPTIONS
+          );
+          netflixShows = (netflixData.results || []).map(item => ({
+            ...item,
+            media_type: 'tv',
+            priority: 0,
+            isNetflix: true
+          }));
+        }
+
+        const [hindiData, regionalData, movieData, tvData] = await Promise.all([
+          robustFetch(`${API_BASE_URL}/search/movie?query=${encodeURIComponent(q)}&region=IN&with_origin_country=IN&page_size=20`, API_OPTIONS),
+          robustFetch(`${API_BASE_URL}/search/movie?query=${encodeURIComponent(q)}&with_origin_country=IN&page_size=20`, API_OPTIONS),
+          robustFetch(`${API_BASE_URL}/search/movie?query=${encodeURIComponent(q)}&page_size=20`, API_OPTIONS),
+          robustFetch(`${API_BASE_URL}/search/tv?query=${encodeURIComponent(q)}&page_size=20`, API_OPTIONS)
+        ]);
+
+        const hindiMovies = (hindiData.results || []).map(item => ({
+          ...item,
+          media_type: 'movie',
+          priority: 1,
+          isHindi: true
+        }));
+
+        const regionalMovies = (regionalData.results || []).map(item => ({
+          ...item,
+          media_type: 'movie',
+          priority: 2,
+          isHindi: true
+        }));
+
+        const movies = (movieData.results || []).map(item => ({
+          ...item,
+          media_type: 'movie',
+          priority: 3,
+          isHindi: false
+        }));
+
+        const tvShows = (tvData.results || []).map(item => ({
           ...item,
           media_type: 'tv',
-          priority: 0,
-          isNetflix: true
+          priority: 4,
+          isHindi: false
         }));
+
+        allResults = [
+          ...allResults,
+          ...netflixShows,
+          ...hindiMovies,
+          ...regionalMovies,
+          ...movies,
+          ...tvShows
+        ];
       }
+    }
 
-      const [hindiData, regionalData, movieData, tvData] = await Promise.all([
-        robustFetch(`${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}&region=IN&with_origin_country=IN&page_size=20`, API_OPTIONS),
-        robustFetch(`${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}&with_origin_country=IN&page_size=20`, API_OPTIONS),
-        robustFetch(`${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}&page_size=20`, API_OPTIONS),
-        robustFetch(`${API_BASE_URL}/search/tv?query=${encodeURIComponent(query)}&page_size=20`, API_OPTIONS)
-      ]);
+    // Remove duplicates
+    const uniqueResults = allResults.filter((item, index, arr) =>
+      arr.findIndex(x => x.id === item.id) === index
+    );
 
-      const hindiMovies = (hindiData.results || []).map(item => ({
-        ...item,
-        media_type: 'movie',
-        priority: 1,
-        isHindi: true
-      }));
-
-      const regionalMovies = (regionalData.results || []).map(item => ({
-        ...item,
-        media_type: 'movie',
-        priority: 2,
-        isHindi: true
-      }));
-
-      const movies = (movieData.results || []).map(item => ({
-        ...item,
-        media_type: 'movie',
-        priority: 3,
-        isHindi: false
-      }));
-
-      const tvShows = (tvData.results || []).map(item => ({
-        ...item,
-        media_type: 'tv',
-        priority: 4,
-        isHindi: false
-      }));
-
-      const allResults = [...netflixShows, ...hindiMovies, ...regionalMovies, ...movies, ...tvShows];
-      const uniqueResults = allResults.filter((item, index, arr) =>
-        arr.findIndex(x => x.id === item.id) === index
-      );
-
-      const sortedResults = uniqueResults.sort((a, b) => {
-        if ((a.isNetflix ? 0 : a.priority) !== (b.isNetflix ? 0 : b.priority)) {
-          return (a.isNetflix ? 0 : a.priority) - (b.isNetflix ? 0 : b.priority);
-        }
-        const queryLower = query.toLowerCase();
-        const aTitle = (a.title || a.name || '').toLowerCase();
-        const bTitle = (b.title || b.name || '').toLowerCase();
-        const aExactMatch = aTitle === queryLower;
-        const bExactMatch = bTitle === queryLower;
-        if (aExactMatch && !bExactMatch) return -1;
-        if (!aExactMatch && bExactMatch) return 1;
-        const aStartsWith = aTitle.startsWith(queryLower);
-        const bStartsWith = bTitle.startsWith(queryLower);
-        if (aStartsWith && !bStartsWith) return -1;
-        if (!aStartsWith && bStartsWith) return 1;
-        const aContains = aTitle.includes(queryLower);
-        const bContains = bTitle.includes(queryLower);
-        if (aContains && !bContains) return -1;
-        if (!aContains && bContains) return 1;
-        return (b.popularity || 0) - (a.popularity || 0);
-      });
-
-      const filteredResults = sortedResults.filter(item => item.original_language !== 'ko');
-      setContentList(filteredResults);
-
-      if (filteredResults.length > 0) {
-        await updateSearchCount(query, filteredResults[0]);
+    // Sort as before
+    const queryLower = query.toLowerCase();
+    const sortedResults = uniqueResults.sort((a, b) => {
+      if ((a.isNetflix ? 0 : a.priority) !== (b.isNetflix ? 0 : b.priority)) {
+        return (a.isNetflix ? 0 : a.priority) - (b.isNetflix ? 0 : b.priority);
       }
-    } else {
-      const [movieData, tvData, indianData] = await Promise.all([
-        robustFetch(`${API_BASE_URL}/discover/movie?sort_by=popularity.desc&page_size=20`, API_OPTIONS),
-        robustFetch(`${API_BASE_URL}/discover/tv?sort_by=popularity.desc&page_size=20`, API_OPTIONS),
-        robustFetch(`${API_BASE_URL}/discover/movie?sort_by=popularity.desc&with_origin_country=IN&page_size=20`, API_OPTIONS)
-      ]);
+      const aTitle = (a.title || a.name || '').toLowerCase();
+      const bTitle = (b.title || b.name || '').toLowerCase();
+      const aExactMatch = aTitle === queryLower;
+      const bExactMatch = bTitle === queryLower;
+      if (aExactMatch && !bExactMatch) return -1;
+      if (!aExactMatch && bExactMatch) return 1;
+      const aStartsWith = aTitle.startsWith(queryLower);
+      const bStartsWith = bTitle.startsWith(queryLower);
+      if (aStartsWith && !bStartsWith) return -1;
+      if (!aStartsWith && bStartsWith) return 1;
+      const aContains = aTitle.includes(queryLower);
+      const bContains = bTitle.includes(queryLower);
+      if (aContains && !bContains) return -1;
+      if (!aContains && bContains) return 1;
+      return (b.popularity || 0) - (a.popularity || 0);
+    });
 
-      const movies = (movieData.results || []).map(item => ({ ...item, media_type: 'movie' }));
-      const tvShows = (tvData.results || []).map(item => ({ ...item, media_type: 'tv' }));
-      const indianMovies = (indianData.results || []).map(item => ({ ...item, media_type: 'movie', isRegional: true }));
+    const filteredResults = sortedResults.filter(item => item.original_language !== 'ko');
+    setContentList(filteredResults);
 
-      const combinedResults = [...indianMovies, ...movies, ...tvShows]
-        .filter((item, index, arr) => arr.findIndex(x => x.id === item.id) === index)
-        .sort((a, b) => {
-          if (a.isRegional && !b.isRegional) return -1;
-          if (!a.isRegional && b.isRegional) return 1;
-          return (b.popularity || 0) - (a.popularity || 0);
-        });
-
-      const filteredResults = combinedResults.filter(item => item.original_language !== 'ko');
-      setContentList(filteredResults);
+    if (filteredResults.length > 0) {
+      await updateSearchCount(query, filteredResults[0]);
     }
   } catch (error) {
     console.error(`Error fetching content: ${error}`);
@@ -160,14 +175,7 @@ const fetchContent = async (query = '') => {
   }
 }
 
-function numbersToWords(str) {
-  return str.replace(/\b\d+\b/g, (num) => {
-    const n = parseInt(num, 10);
-    return numberWords[n] || num;
-  });
-}
-
-const App = () => {
+function App() {
   
   const [searchTerm,setSearchTerm] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
