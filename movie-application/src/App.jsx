@@ -212,7 +212,7 @@ const App = () => {
       <div className="pattern" />
       <div className='wrapper'>
           <header>
-           <img src="./logo.png" alt="Hero-Banner" className="w-[400px] h-[400px]" />
+           <img src="./logo.png" alt="Hero-Banner" className="w-[400px] h-[270px]" />
             {/* <img
               src="./cinematicX.png"
               alt="Hero-Banner"
