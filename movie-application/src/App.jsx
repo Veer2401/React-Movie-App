@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import Search from './components/Search'
 import MovieCard from './components/MovieCard';
 import { updateSearchCount } from './appwrite';
@@ -15,91 +15,199 @@ const API_OPTIONS = {
   }
 }
 
+// TMDB watch provider ids
+const PROVIDER = {
+  NETFLIX: 8,
+  PRIME: 9,
+  HOTSTAR: 122, // Disney+ Hotstar (IN)
+};
+
 const App = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [movieList, setMovieList] = useState([])
   const [isLoading, setIsLoading] = useState(false)
 
+  // Abort controller for in-flight search
+  const searchAbortRef = useRef(null)
+
+  const markNetflixForTvItems = async (tvItems) => {
+    const controller = new AbortController()
+    const toCheck = tvItems.slice(0, 8)
+    try {
+      const marked = await Promise.all(
+        toCheck.map(async (item) => {
+          try {
+            const res = await fetch(`${API_BASE_URL}/tv/${item.id}/watch/providers`, { ...API_OPTIONS, signal: controller.signal })
+            if (!res.ok) return item
+            const data = await res.json()
+            const providers = data?.results?.IN?.flatrate || data?.results?.IN?.ads || []
+            const isNetflix = Array.isArray(providers) && providers.some((p) => p.provider_id === PROVIDER.NETFLIX)
+            return { ...item, isNetflix }
+          } catch {
+            return item
+          }
+        })
+      )
+      return [...marked, ...tvItems.slice(8)]
+    } catch {
+      return tvItems
+    }
+  }
+
   const fetchMovies = async (query = '') => {
+    // cancel previous
+    if (searchAbortRef.current) {
+      searchAbortRef.current.abort()
+    }
+    const controller = new AbortController()
+    searchAbortRef.current = controller
+
     setIsLoading(true)
     setErrorMessage('')
 
     try {
       if (!query) {
-        // Fetch popular Hindi movies and general popular movies
-        const [hindiRes, generalRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/discover/movie?with_origin_country=IN&sort_by=popularity.desc`, API_OPTIONS),
-          fetch(`${API_BASE_URL}/discover/movie?sort_by=popularity.desc`, API_OPTIONS),
+        // Default feed: mix of Hindi movies, Netflix/Hotstar/Prime TV, and popular movies
+        const [hindiRes, moviesRes, hotstarRes, primeRes, netflixRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/discover/movie?with_origin_country=IN&sort_by=popularity.desc&page=1`, { ...API_OPTIONS, signal: controller.signal }),
+          fetch(`${API_BASE_URL}/discover/movie?sort_by=popularity.desc&page=1`, { ...API_OPTIONS, signal: controller.signal }),
+          fetch(`${API_BASE_URL}/discover/tv?with_watch_providers=${PROVIDER.HOTSTAR}&watch_region=IN&sort_by=popularity.desc&page=1`, { ...API_OPTIONS, signal: controller.signal }),
+          fetch(`${API_BASE_URL}/discover/tv?with_watch_providers=${PROVIDER.PRIME}&watch_region=IN&sort_by=popularity.desc&page=1`, { ...API_OPTIONS, signal: controller.signal }),
+          fetch(`${API_BASE_URL}/discover/tv?with_watch_providers=${PROVIDER.NETFLIX}&watch_region=IN&sort_by=popularity.desc&page=1`, { ...API_OPTIONS, signal: controller.signal }),
         ])
 
-        if (!hindiRes.ok || !generalRes.ok) {
-          throw new Error('Failed to fetch movies')
+        if (controller.signal.aborted) return
+
+        if (!hindiRes.ok || !moviesRes.ok || !hotstarRes.ok || !primeRes.ok || !netflixRes.ok) {
+          throw new Error('Failed to fetch default feed')
         }
 
-        const [hindiData, generalData] = await Promise.all([
-          hindiRes.json(),
-          generalRes.json(),
+        const [hindiData, moviesData, hotstarData, primeData, netflixData] = await Promise.all([
+          hindiRes.json(), moviesRes.json(), hotstarRes.json(), primeRes.json(), netflixRes.json()
         ])
 
-        const hindiMovies = (hindiData.results || [])
-        const generalMovies = (generalData.results || [])
+        const hindiMovies = (hindiData.results || []).map((m) => ({ ...m, media_type: 'movie', isHindi: true }))
+        const movies = (moviesData.results || []).map((m) => ({ ...m, media_type: 'movie' }))
+        const hotstarTv = (hotstarData.results || []).map((t) => ({ ...t, media_type: 'tv' }))
+        const primeTv = (primeData.results || []).map((t) => ({ ...t, media_type: 'tv' }))
+        const netflixTv = (netflixData.results || []).map((t) => ({ ...t, media_type: 'tv', isNetflix: true }))
 
-        // Merge with Hindi first, then general, removing duplicates by id
-        const merged = [...hindiMovies, ...generalMovies]
+        // Interleave to ensure a balanced mix at the top
+        const buckets = [hindiMovies, netflixTv, movies, hotstarTv, primeTv]
+        const interleaved = []
+        let i = 0
+        let added = 0
         const seen = new Set()
-        const unique = []
-        for (const m of merged) {
-          if (!seen.has(m.id)) {
-            seen.add(m.id)
-            unique.push(m)
+        while (added < 20) {
+          let progressed = false
+          for (const bucket of buckets) {
+            const item = bucket[i]
+            if (item) {
+              const key = `${item.media_type}-${item.id}`
+              if (!seen.has(key)) {
+                interleaved.push(item)
+                seen.add(key)
+                added++
+                if (added >= 20) break
+              }
+              progressed = true
+            }
+          }
+          if (!progressed) break
+          i++
+        }
+
+        setMovieList(interleaved)
+        return
+      }
+
+      // Search: movies + TV concurrently (fast); label Netflix in background
+      const [movieRes, tvRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}&page=1`, { ...API_OPTIONS, signal: controller.signal }),
+        fetch(`${API_BASE_URL}/search/tv?query=${encodeURIComponent(query)}&page=1`, { ...API_OPTIONS, signal: controller.signal }),
+      ])
+
+      if (controller.signal.aborted) return
+      if (!movieRes.ok || !tvRes.ok) {
+        throw new Error('Failed to fetch search results')
+      }
+
+      const [movieData, tvData] = await Promise.all([movieRes.json(), tvRes.json()])
+      const movies = (movieData.results || []).map((m) => ({ ...m, media_type: 'movie' }))
+      const tvShows = (tvData.results || []).map((t) => ({ ...t, media_type: 'tv' }))
+
+      // Quick combine and show immediately
+      const quickBuckets = [tvShows.slice(0, 6), movies.slice(0, 10), tvShows.slice(6, 12)]
+      const mixed = []
+      let j = 0
+      const seenMix = new Set()
+      while (mixed.length < 20) {
+        let progressed = false
+        for (const bucket of quickBuckets) {
+          const item = bucket[j]
+          if (item) {
+            const key = `${item.media_type}-${item.id}`
+            if (!seenMix.has(key)) {
+              mixed.push(item)
+              seenMix.add(key)
+              if (mixed.length >= 20) break
+            }
+            progressed = true
           }
         }
-
-        setMovieList(unique.slice(0, 20))
-        return
+        if (!progressed) break
+        j++
       }
 
-      const endpoint = `${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}`
-      const response = await fetch(endpoint, API_OPTIONS)
-      if (!response.ok) {
-        throw new Error('Failed to fetch movies')
-      }
+      setMovieList(mixed.length ? mixed : [...tvShows, ...movies])
 
-      const data = await response.json()
+      // Background enrichment: label Netflix for first TV items after render
+      ;(async () => {
+        try {
+          const labeled = await markNetflixForTvItems(tvShows)
+          setMovieList((current) =>
+            current.map((item) => {
+              if (item.media_type !== 'tv') return item
+              const match = labeled.find((t) => t.id === item.id)
+              return match ? { ...item, isNetflix: match.isNetflix } : item
+            })
+          )
+        } catch {}
+      })()
 
-      if (data.Response === 'False') {
-        setErrorMessage(data.Error || 'Unknown error occurred')
-        setMovieList([])
-        return
-      }
-
-      setMovieList(data.results || [])
-
-      if (query && (data.results || []).length > 0) {
-        await updateSearchCount(query, data.results[0])
+      if (query && (mixed.length ? mixed : [...tvShows, ...movies]).length > 0) {
+        await updateSearchCount(query, (mixed.length ? mixed : [...tvShows, ...movies])[0])
       }
     } catch (error) {
+      if (error?.name === 'AbortError') return
       console.error(`Error fetching movies:, ${error}`)
       setErrorMessage('Failed to fetch movies')
     } finally {
-      setIsLoading(false)
+      if (!searchAbortRef.current?.signal.aborted) setIsLoading(false)
     }
   }
 
+  // Debounce search for faster UX while typing
   useEffect(() => {
-    fetchMovies(searchTerm)
+    const id = setTimeout(() => {
+      fetchMovies(searchTerm)
+    }, 50)
+    return () => clearTimeout(id)
   }, [searchTerm])
 
   return (
     <main>
+      {/* <div className="top-logo">
+        <img src="./cinematicX.png" alt="CinematicX" className="top-logo-image" />
+      </div> */}
       <div className="pattern" />
-      <div className='wrapper'>
+      <div className='wrapper fade-in'>
         <header>
-          <img src="./hero.png" alt="Hero-Banner" className="w-[800px] h-auto" />
+          <img src="./cinematic.png" alt="Hero-Banner" className="w-[400px] h-[200px]" />
           <br />
-          <h1>Cinematic<span className='text-gradient'>X</span></h1>
-          <h1>Your <span className="text-gradient">movie </span> dictionary 🎬</h1>
+          {/* <h1>Cinematic<span className='text-gradient'>X</span></h1> */}
+          <h1>Your <span className="text-gradient">Stream </span> Dictionary 🎬</h1>
           <div className="center">
             <h1 className='content-center'>Type it. Find it.</h1>
           </div>
@@ -112,20 +220,27 @@ const App = () => {
           <h2 className='mt-[40px]'>All Movies</h2>
 
           {isLoading ? (
-            <p className='text-white'>Loading...</p>
+            <div className="loading-spinner">
+              <div className="spinner"></div>
+            </div>
           ) : errorMessage ? (
             <p className='text-red-500'>{errorMessage}</p>
           ) : (
             <ul>
               {movieList.map((movie) => (
-                <MovieCard key={movie.id} movie={movie} />
+                <MovieCard key={`${movie.media_type || 'movie'}-${movie.id}`} movie={movie} />
               ))}
             </ul>
           )}
         </section>
+        <div className="footer">
+          <h2>Made with  ❤️  by  <a href="https://github.com/Veer2401" target="_blank" rel="noopener noreferrer"> Veer  </a></h2>
+          <p>Powered by <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer">TMDB</a></p>
+          <p>Source code on <a href="https://github.com/Veer2401/React-Movie-App" target="_blank" rel="noopener noreferrer">GitHub</a></p>
+          <p>Copyright © 2025 Veer Harischandrakar</p>
+        </div>
       </div>
     </main>
   )
 }
-
 export default App

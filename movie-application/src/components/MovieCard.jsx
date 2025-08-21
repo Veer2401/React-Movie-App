@@ -53,6 +53,8 @@ const MovieCard = ({ movie }) => {
       <div className="flip-inner">
         <div className="flip-front">
           {/* Poster and other content */}
+          {movie.isNetflix && <div className="netflix-badge">Netflix</div>}
+          {movie.isPrime && <div className="prime-badge">Prime video</div>}
           <img src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title || movie.name} />
           <h3>{movie.title || movie.name}</h3>
           <div className='content'>

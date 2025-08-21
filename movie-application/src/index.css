@@ -107,6 +107,12 @@
     & ul {
       @apply grid grid-cols-1 gap-5 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4;
     }
+    
+    margin-bottom: 120px; /* Increased gap for footer */
+  }
+
+  .all-movies h2 {
+    @apply text-white text-3xl font-bold mb-6 text-center;
   }
 
   .movie-card {
@@ -153,6 +159,24 @@
       @apply text-gray-100 font-medium text-base;
     }
 
+    /* Song card specific styling */
+    &.song-card {
+      @apply border-2 border-green-500/30;
+      box-shadow: 0 0 20px rgba(34, 197, 94, 0.1);
+    }
+
+    & .content .artist {
+      @apply text-gray-100 font-medium text-base;
+    }
+
+    & .content .album {
+      @apply text-gray-100 font-medium text-base;
+    }
+
+    & .content .duration {
+      @apply text-gray-100 font-medium text-base;
+    }
+
     .hindi-badge {
       @apply absolute top-2 right-2 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10;
       box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
@@ -163,6 +187,32 @@
       @apply border-2 border-orange-500/30;
       box-shadow: 0 0 20px rgba(249, 115, 22, 0.1);
     }
+  }
+
+  .netflix-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #e50914;
+    color: #fff;
+    font-weight: 700;
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    z-index: 10;
+  }
+
+  .prime-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: #0a84ff;
+    color: #fff;
+    font-weight: 700;
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    z-index: 10;
   }
 
   /* Flip card container and faces */
@@ -200,22 +250,6 @@
     transform: rotateY(180deg);
   }
 
-  .netflix-badge {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    background: #e50914;
-    color: #fff;
-    font-size: 0.85rem;
-    font-weight: bold;
-    padding: 4px 10px;
-    border-radius: 8px;
-    z-index: 10;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    letter-spacing: 1px;
-    font-family: "Bebas Neue", Arial, sans-serif;
-  }
-
   .loader {
     display: inline-block;
     width: 48px;
@@ -231,6 +265,27 @@
     to {
       transform: rotate(360deg);
     }
+  }
+
+  /* Page Load Animation */
+  .fade-in {
+    animation: fadeIn 0.8s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    0% {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Smooth transitions for all elements */
+  * {
+    transition: all 0.3s ease-in-out;
   }
 
   .suggestion-dropdown {
@@ -270,6 +325,50 @@
   .fade-in-screen {
     animation: fadeInScreen 0.8s ease;
   }
+
+  .footer {
+    position: relative;
+    bottom: 10px;
+    left: 20px;
+    text-align: center;
+    color: white;
+    z-index: 1000;
+  }
+
+  .footer p {
+    margin-top: 10px;
+  }
+
+  .footer a {
+    color: white;
+    text-decoration: none;
+  }
+
+  .footer a:hover {
+    text-decoration: none;
+  }
+
+  /* Loading Spinner */
+  .loading-spinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+  }
+
+  .spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top: 4px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
 }
 
 @utility text-gradient {
@@ -296,4 +395,20 @@
   display: flex;
   flex-direction: column;
   margin-bottom: 0;
+}
+
+.top-logo {
+  position: fixed;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+}
+
+.top-logo-image {
+  height: 36px;
+  width: auto;
+  object-fit: contain;
+  background-color: #030014;
+  opacity: 0.95;
 }
