@@ -18,13 +18,11 @@ const Search = ({ searchTerm, setSearchTerm }) => {
 
   useEffect(() => {
     if (searchTerm.length > 1) {
-      // Fetch movie and TV suggestions from TMDB
       const fetchSuggestions = async () => {
         const movieRes = await fetch(`${API_BASE_URL}/search/movie?query=${encodeURIComponent(searchTerm)}&page=1`, API_OPTIONS);
         const tvRes = await fetch(`${API_BASE_URL}/search/tv?query=${encodeURIComponent(searchTerm)}&page=1`, API_OPTIONS);
         const movieData = await movieRes.json();
         const tvData = await tvRes.json();
-        // Combine and deduplicate suggestions
         const allResults = [
           ...(movieData.results || []),
           ...(tvData.results || [])
@@ -51,7 +49,7 @@ const Search = ({ searchTerm, setSearchTerm }) => {
           if (!aLower.includes(queryLower) && bLower.includes(queryLower)) return 1;
           return 0;
         });
-        setSuggestions(unique.slice(0, 6)); // Show top 6 suggestions
+        setSuggestions(unique.slice(0, 6));
       };
       fetchSuggestions();
       setShowSuggestions(true);
