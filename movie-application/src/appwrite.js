@@ -1,12 +1,21 @@
 import { Client, Databases,ID,Query } from "appwrite";
+import { enforceHttpsInProduction } from './utils/env.js';
 
 const PROJECT_ID = import.meta.env.VITE_APPWRITE_PROJECT_ID;
 const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
 const COLLECTION_ID = import.meta.env.VITE_APPWRITE_COLLECTION_ID;
 
+// Get endpoint from environment variable, enforce HTTPS in production
+const getAppwriteEndpoint = () => {
+  const endpoint = import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
+  
+  // Use utility function to enforce HTTPS in production
+  return enforceHttpsInProduction(endpoint, 'https://cloud.appwrite.io/v1');
+};
+
 const client = new Client()
-    .setEndpoint('https://cloud.appwrite.io/v1') // Your API Endpoint
-    .setProject(PROJECT_ID); // Your project ID
+    .setEndpoint(getAppwriteEndpoint())
+    .setProject(PROJECT_ID);
 
 const database = new Databases(client);
 

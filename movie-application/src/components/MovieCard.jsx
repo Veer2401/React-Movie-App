@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react'
+import { isProduction } from '../utils/env.js';
 
+// API config - TMDB always uses HTTPS
 const API_BASE_URL = 'https://api.themoviedb.org/3';
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
@@ -12,7 +14,7 @@ const API_OPTIONS = {
 }
 
 const MovieCard = ({ movie }) => {
-  const { id, title, name, vote_average, poster_path, release_date, first_air_date, original_language, overview, media_type, isHindi, isNetflix } = movie || {};
+  const { id, title, name, vote_average, poster_path, release_date, first_air_date, original_language, overview, media_type, isHindi, isNetflix, isPrime } = movie || {};
 
   const [isFlipped, setIsFlipped] = useState(false);
   const [trailerUrl, setTrailerUrl] = useState('');
@@ -55,8 +57,15 @@ const MovieCard = ({ movie }) => {
           {/* Poster and other content */}
           {movie.isNetflix && <div className="netflix-badge">Netflix</div>}
           {movie.isPrime && <div className="prime-badge">Prime video</div>}
-          <img src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title || movie.name} />
-          <h3>{movie.title || movie.name}</h3>
+          <img 
+            src={poster_path ? `https://image.tmdb.org/t/p/w500${poster_path}` : '/no-movie.png'} 
+            alt={displayTitle || "No Title"} 
+            onError={(e) => {
+              e.target.src = '/no-movie.png';
+              e.target.alt = 'Poster not available';
+            }}
+          />
+          <h3>{displayTitle || "No Title"}</h3>
           <div className='content'>
             <div className='rating'>
               <img src="star.svg" alt="Star Icon" />
@@ -98,6 +107,24 @@ const MovieCard = ({ movie }) => {
               >
                 Watch trailer
               </a>
+
+              {/* Watch on section - only for Netflix */}
+              {isNetflix && (
+                <div className='mt-4'>
+                  <p className='text-gray-100 text-sm mb-2'>Watch on:</p>
+                  <div className='flex gap-2'>
+                    <a
+                      href={`https://www.netflix.com/search?q=${encodeURIComponent(displayTitle)}`}
+                      target='_blank'
+                      rel='noreferrer'
+                      onClick={(e) => e.stopPropagation()}
+                      className='bg-red-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-red-700 transition-colors cursor-pointer'
+                    >
+                      Netflix
+                    </a>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

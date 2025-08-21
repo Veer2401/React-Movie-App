@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react'
 import Search from './components/Search'
 import MovieCard from './components/MovieCard';
+// import SongCard from './components/SongCard';
 import { updateSearchCount } from './appwrite';
+import { isProduction } from './utils/env.js';
 
-// API config
+// API config - TMDB always uses HTTPS
 const API_BASE_URL = 'https://api.themoviedb.org/3';
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
@@ -177,7 +179,12 @@ const App = () => {
       })()
 
       if (query && (mixed.length ? mixed : [...tvShows, ...movies]).length > 0) {
-        await updateSearchCount(query, (mixed.length ? mixed : [...tvShows, ...movies])[0])
+        try {
+          await updateSearchCount(query, (mixed.length ? mixed : [...tvShows, ...movies])[0]);
+        } catch (error) {
+          console.error('Appwrite API error:', error);
+          // Don't show this error to user as it's not critical
+        }
       }
     } catch (error) {
       if (error?.name === 'AbortError') return
@@ -204,7 +211,13 @@ const App = () => {
       <div className="pattern" />
       <div className='wrapper fade-in'>
         <header>
-          <img src="./cinematic.png" alt="Hero-Banner" className="w-[400px] h-[200px]" />
+          <img 
+            src="./cinematic.png" 
+            alt="Hero-Banner" 
+            className="w-[400px] h-[200px] cursor-pointer hover:opacity-80 transition-opacity" 
+            onClick={() => window.location.reload()}
+            title="Click to refresh page"
+          />
           <br />
           {/* <h1>Cinematic<span className='text-gradient'>X</span></h1> */}
           <h1>Your <span className="text-gradient">Stream </span> Dictionary 🎬</h1>
@@ -217,18 +230,35 @@ const App = () => {
         </header>
 
         <section className='all-movies'>
-          <h2 className='mt-[40px]'>All Movies</h2>
+          <h2 className='mt-[40px]'>Movies, TV Shows & More!</h2>
 
           {isLoading ? (
             <div className="loading-spinner">
               <div className="spinner"></div>
             </div>
           ) : errorMessage ? (
-            <p className='text-red-500'>{errorMessage}</p>
+            <div className="error-container">
+              <p className='text-red-500 mb-4'>{errorMessage}</p>
+              <button 
+                onClick={() => fetchMovies(searchTerm)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md  transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          ) : movieList.length === 0 && searchTerm ? (
+            <div className="no-results">
+              <p className='text-gray-300 text-center text-lg'>No results found for "{searchTerm}"</p>
+              <p className='text-gray-500 text-center mt-2'>Try searching with different keywords</p>
+            </div>
           ) : (
             <ul>
-              {movieList.map((movie) => (
-                <MovieCard key={`${movie.media_type || 'movie'}-${movie.id}`} movie={movie} />
+              {movieList.map((item) => (
+                item.media_type === 'song' ? (
+                  <SongCard key={`song-${item.id}`} song={item} />
+                ) : (
+                  <MovieCard key={`${item.media_type || 'movie'}-${item.id}`} movie={item} />
+                )
               ))}
             </ul>
           )}

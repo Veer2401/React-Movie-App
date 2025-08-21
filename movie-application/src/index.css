@@ -369,6 +369,24 @@
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
   }
+
+  /* Error States */
+  .error-container {
+    @apply text-center py-8;
+  }
+
+  .no-results {
+    @apply text-center py-12;
+  }
+
+  /* Error Boundary */
+  .error-boundary {
+    @apply min-h-screen flex items-center justify-center bg-gray-900 p-4;
+  }
+
+  .error-content {
+    @apply text-center max-w-md mx-auto;
+  }
 }
 
 @utility text-gradient {

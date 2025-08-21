@@ -19,37 +19,47 @@ const Search = ({ searchTerm, setSearchTerm }) => {
   useEffect(() => {
     if (searchTerm.length > 1) {
       const fetchSuggestions = async () => {
-        const movieRes = await fetch(`${API_BASE_URL}/search/movie?query=${encodeURIComponent(searchTerm)}&page=1`, API_OPTIONS);
-        const tvRes = await fetch(`${API_BASE_URL}/search/tv?query=${encodeURIComponent(searchTerm)}&page=1`, API_OPTIONS);
-        const movieData = await movieRes.json();
-        const tvData = await tvRes.json();
-        const allResults = [
-          ...(movieData.results || []),
-          ...(tvData.results || [])
-        ];
-        const unique = [];
-        const seen = new Set();
-        for (const item of allResults) {
-          const title = item.title || item.name;
-          if (title && !seen.has(title)) {
-            unique.push(title);
-            seen.add(title);
+        try {
+          const movieRes = await fetch(`${API_BASE_URL}/search/movie?query=${encodeURIComponent(searchTerm)}&page=1`, API_OPTIONS);
+          const tvRes = await fetch(`${API_BASE_URL}/search/tv?query=${encodeURIComponent(searchTerm)}&page=1`, API_OPTIONS);
+          
+          if (!movieRes.ok || !tvRes.ok) {
+            throw new Error('API request failed');
           }
+          
+          const movieData = await movieRes.json();
+          const tvData = await tvRes.json();
+          const allResults = [
+            ...(movieData.results || []),
+            ...(tvData.results || [])
+          ];
+          const unique = [];
+          const seen = new Set();
+          for (const item of allResults) {
+            const title = item.title || item.name;
+            if (title && !seen.has(title)) {
+              unique.push(title);
+              seen.add(title);
+            }
+          }
+          // Sort: exact match first, then startsWith, then contains, then others
+          const queryLower = searchTerm.toLowerCase();
+          unique.sort((a, b) => {
+            const aLower = a.toLowerCase();
+            const bLower = b.toLowerCase();
+            if (aLower === queryLower && bLower !== queryLower) return -1;
+            if (aLower !== queryLower && bLower === queryLower) return 1;
+            if (aLower.startsWith(queryLower) && !bLower.startsWith(queryLower)) return -1;
+            if (!aLower.startsWith(queryLower) && bLower.startsWith(queryLower)) return 1;
+            if (aLower.includes(queryLower) && !bLower.includes(queryLower)) return -1;
+            if (!aLower.includes(queryLower) && bLower.includes(queryLower)) return 1;
+            return 0;
+          });
+          setSuggestions(unique.slice(0, 6));
+        } catch (error) {
+          console.error('Suggestions API error:', error);
+          setSuggestions(['Suggestions unavailable']);
         }
-        // Sort: exact match first, then startsWith, then contains, then others
-        const queryLower = searchTerm.toLowerCase();
-        unique.sort((a, b) => {
-          const aLower = a.toLowerCase();
-          const bLower = b.toLowerCase();
-          if (aLower === queryLower && bLower !== queryLower) return -1;
-          if (aLower !== queryLower && bLower === queryLower) return 1;
-          if (aLower.startsWith(queryLower) && !bLower.startsWith(queryLower)) return -1;
-          if (!aLower.startsWith(queryLower) && bLower.startsWith(queryLower)) return 1;
-          if (aLower.includes(queryLower) && !bLower.includes(queryLower)) return -1;
-          if (!aLower.includes(queryLower) && bLower.includes(queryLower)) return 1;
-          return 0;
-        });
-        setSuggestions(unique.slice(0, 6));
       };
       fetchSuggestions();
       setShowSuggestions(true);
