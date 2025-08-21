@@ -1,4 +1,4 @@
-# 🎬 CinematicX - Your Stream Dictionary
+# 🎬 CinematicX - The React Movie App
 
 A React-based movie and TV show discovery app powered by [TMDB
 API](https://www.themoviedb.org/).\
