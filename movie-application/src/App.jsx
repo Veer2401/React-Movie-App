@@ -31,6 +31,82 @@ const App = () => {
   // Enhanced in-memory cache for search results in this session
   const searchCacheRef = useRef(new Map())
   
+  // Daily movie rotation with 80% Hindi, 20% English mix
+  const getDailyMovieMix = async () => {
+    try {
+      const today = new Date().toDateString();
+      const cacheKey = `daily_mix_${today}`;
+      
+      // Check if we already have today's mix in cache
+      if (searchCacheRef.current.has(cacheKey)) {
+        return searchCacheRef.current.get(cacheKey);
+      }
+
+      // Fetch Hindi movies (80% of total)
+      const hindiResponse = await fetch(
+        `${API_BASE_URL}/discover/movie?with_origin_country=IN&sort_by=popularity.desc&page=1&include_adult=false`, 
+        { 
+          method: 'GET', 
+          headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` } 
+        }
+      );
+      
+      // Fetch English movies (20% of total)
+      const englishResponse = await fetch(
+        `${API_BASE_URL}/discover/movie?with_original_language=en&sort_by=popularity.desc&page=1&include_adult=false`, 
+        { 
+          method: 'GET', 
+          headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` } 
+        }
+      );
+
+      if (!hindiResponse.ok || !englishResponse.ok) {
+        throw new Error('Failed to fetch daily movie mix');
+      }
+
+      const [hindiData, englishData] = await Promise.all([
+        hindiResponse.json(),
+        englishResponse.json()
+      ]);
+
+      // Create mix: 80% Hindi, 20% English (total 20 movies)
+      const hindiMovies = (hindiData.results || []).slice(0, 16).map(m => ({ 
+        ...m, 
+        media_type: 'movie', 
+        isHindi: true 
+      }));
+      
+      const englishMovies = (englishData.results || []).slice(0, 4).map(m => ({ 
+        ...m, 
+        media_type: 'movie' 
+      }));
+
+      // Interleave for better mix
+      const dailyMix = [];
+      let hindiIndex = 0;
+      let englishIndex = 0;
+      
+      for (let i = 0; i < 20; i++) {
+        if (i % 5 === 0 && englishIndex < englishMovies.length) {
+          // Every 5th movie is English (20%)
+          dailyMix.push(englishMovies[englishIndex]);
+          englishIndex++;
+        } else if (hindiIndex < hindiMovies.length) {
+          // Rest are Hindi (80%)
+          dailyMix.push(hindiMovies[hindiIndex]);
+          hindiIndex++;
+        }
+      }
+
+      // Cache today's mix
+      searchCacheRef.current.set(cacheKey, dailyMix);
+      return dailyMix;
+    } catch (error) {
+      console.error('Error fetching daily movie mix:', error);
+      return [];
+    }
+  };
+
   // Pre-warm cache with popular searches
   useEffect(() => {
     const popularSearches = ['action', 'comedy', 'drama', 'horror', 'romance']
@@ -97,60 +173,76 @@ const App = () => {
       }
 
       if (!query) {
-        // Default feed: mix of Hindi movies, Netflix/Hotstar/Prime TV, and popular movies
+        // Default feed: Daily movie mix with 80% Hindi, 20% English
         // Show loading state immediately
         setMovieList([])
         
-        const [hindiRes, moviesRes, hotstarRes, primeRes, netflixRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/discover/movie?with_origin_country=IN&sort_by=popularity.desc&page=1`, { method: 'GET', headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` }, signal: controller.signal }),
-          fetch(`${API_BASE_URL}/discover/movie?sort_by=popularity.desc&page=1`, { method: 'GET', headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` }, signal: controller.signal }),
-          fetch(`${API_BASE_URL}/discover/tv?with_watch_providers=${PROVIDER.HOTSTAR}&watch_region=IN&sort_by=popularity.desc&page=1`, { method: 'GET', headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` }, signal: controller.signal }),
-          fetch(`${API_BASE_URL}/discover/tv?with_watch_providers=${PROVIDER.PRIME}&watch_region=IN&sort_by=popularity.desc&page=1`, { method: 'GET', headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` }, signal: controller.signal }),
-          fetch(`${API_BASE_URL}/discover/tv?with_watch_providers=${PROVIDER.NETFLIX}&watch_region=IN&sort_by=popularity.desc&page=1`, { method: 'GET', headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` }, signal: controller.signal }),
-        ])
+        try {
+          const dailyMix = await getDailyMovieMix();
+          
+          if (controller.signal.aborted) return;
+          
+          if (dailyMix.length > 0) {
+            setMovieList(dailyMix);
+          } else {
+            // Fallback to original logic if daily mix fails
+            const [hindiRes, moviesRes, hotstarRes, primeRes, netflixRes] = await Promise.all([
+              fetch(`${API_BASE_URL}/discover/movie?with_origin_country=IN&sort_by=popularity.desc&page=1`, { method: 'GET', headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` }, signal: controller.signal }),
+              fetch(`${API_BASE_URL}/discover/movie?sort_by=popularity.desc&page=1`, { method: 'GET', headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` }, signal: controller.signal }),
+              fetch(`${API_BASE_URL}/discover/tv?with_watch_providers=${PROVIDER.HOTSTAR}&watch_region=IN&sort_by=popularity.desc&page=1`, { method: 'GET', headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` }, signal: controller.signal }),
+              fetch(`${API_BASE_URL}/discover/tv?with_watch_providers=${PROVIDER.PRIME}&watch_region=IN&sort_by=popularity.desc&page=1`, { method: 'GET', headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` }, signal: controller.signal }),
+              fetch(`${API_BASE_URL}/discover/tv?with_watch_providers=${PROVIDER.NETFLIX}&watch_region=IN&sort_by=popularity.desc&page=1`, { method: 'GET', headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` }, signal: controller.signal }),
+            ])
 
-        if (controller.signal.aborted) return
+            if (controller.signal.aborted) return
 
-        if (!hindiRes.ok || !moviesRes.ok || !hotstarRes.ok || !primeRes.ok || !netflixRes.ok) {
-          throw new Error('Failed to fetch default feed')
-        }
-
-        const [hindiData, moviesData, hotstarData, primeData, netflixData] = await Promise.all([
-          hindiRes.json(), moviesRes.json(), hotstarRes.json(), primeRes.json(), netflixRes.json()
-        ])
-
-        const hindiMovies = (hindiData.results || []).map((m) => ({ ...m, media_type: 'movie', isHindi: true }))
-        const movies = (moviesData.results || []).map((m) => ({ ...m, media_type: 'movie' }))
-        const hotstarTv = (hotstarData.results || []).map((t) => ({ ...t, media_type: 'tv' }))
-        const primeTv = (primeData.results || []).map((t) => ({ ...t, media_type: 'tv' }))
-        const netflixTv = (netflixData.results || []).map((t) => ({ ...t, media_type: 'tv', isNetflix: true }))
-
-        // Interleave to ensure a balanced mix at the top
-        const buckets = [hindiMovies, netflixTv, movies, hotstarTv, primeTv]
-        const interleaved = []
-        let i = 0
-        let added = 0
-        const seen = new Set()
-        while (added < 20) {
-          let progressed = false
-          for (const bucket of buckets) {
-            const item = bucket[i]
-            if (item) {
-              const key = `${item.media_type}-${item.id}`
-              if (!seen.has(key)) {
-                interleaved.push(item)
-                seen.add(key)
-                added++
-                if (added >= 20) break
-              }
-              progressed = true
+            if (!hindiRes.ok || !moviesRes.ok || !hotstarRes.ok || !primeRes.ok || !netflixRes.ok) {
+              throw new Error('Failed to fetch default feed')
             }
-          }
-          if (!progressed) break
-          i++
-        }
 
-        setMovieList(interleaved)
+            const [hindiData, moviesData, hotstarData, primeData, netflixData] = await Promise.all([
+              hindiRes.json(), moviesRes.json(), hotstarRes.json(), primeRes.json(), netflixRes.json()
+            ])
+
+            const hindiMovies = (hindiData.results || []).map((m) => ({ ...m, media_type: 'movie', isHindi: true }))
+            const movies = (moviesData.results || []).map((m) => ({ ...m, media_type: 'movie' }))
+            const hotstarTv = (hotstarData.results || []).map((t) => ({ ...t, media_type: 'tv' }))
+            const primeTv = (primeData.results || []).map((t) => ({ ...t, media_type: 'tv' }))
+            const netflixTv = (netflixData.results || []).map((t) => ({ ...t, media_type: 'tv', isNetflix: true }))
+
+            // Interleave to ensure a balanced mix at the top
+            const buckets = [hindiMovies, netflixTv, movies, hotstarTv, primeTv]
+            const interleaved = []
+            let i = 0
+            let added = 0
+            const seen = new Set()
+            while (added < 20) {
+              let progressed = false
+              for (const bucket of buckets) {
+                const item = bucket[i]
+                if (item) {
+                  const key = `${item.media_type}-${item.id}`
+                  if (!seen.has(key)) {
+                    interleaved.push(item)
+                    seen.add(key)
+                    added++
+                    if (added >= 20) break
+                  }
+                  progressed = true
+                }
+              }
+              if (!progressed) break
+              i++
+            }
+
+            setMovieList(interleaved)
+          }
+        } catch (error) {
+          console.error('Error fetching daily mix:', error);
+          // Fallback to empty list
+          setMovieList([])
+        }
+        
         setIsLoading(false)
         return
       }
@@ -244,6 +336,38 @@ const App = () => {
       setFilteredMovieList(filtered);
     }
   }, [movieList, selectedLanguages]);
+
+  // Check for date change and refresh daily mix
+  useEffect(() => {
+    const checkDateChange = () => {
+      const today = new Date().toDateString();
+      const lastCheck = localStorage.getItem('lastDailyMixDate');
+      
+      if (lastCheck !== today) {
+        // Date changed, clear daily mix cache and refresh
+        localStorage.setItem('lastDailyMixDate', today);
+        
+        // Clear daily mix from cache
+        const cacheKeys = Array.from(searchCacheRef.current.keys());
+        cacheKeys.forEach(key => {
+          if (key.startsWith('daily_mix_')) {
+            searchCacheRef.current.delete(key);
+          }
+        });
+        
+        // Refresh movies if no search term
+        if (!searchTerm) {
+          fetchMovies('');
+        }
+      }
+    };
+
+    // Check on mount and set up interval
+    checkDateChange();
+    const interval = setInterval(checkDateChange, 60000); // Check every minute
+
+    return () => clearInterval(interval);
+  }, [searchTerm]);
 
   // Debounce search for better performance (300ms delay)
   useEffect(() => {
