@@ -16,9 +16,10 @@ const Search = ({ searchTerm, setSearchTerm }) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef(null);
 
+  // Debounced suggestions for better performance
   useEffect(() => {
     if (searchTerm.length > 1) {
-      const fetchSuggestions = async () => {
+      const timeoutId = setTimeout(async () => {
         try {
           const movieRes = await fetch(`${API_BASE_URL}/search/movie?query=${encodeURIComponent(searchTerm)}&page=1`, API_OPTIONS);
           const tvRes = await fetch(`${API_BASE_URL}/search/tv?query=${encodeURIComponent(searchTerm)}&page=1`, API_OPTIONS);
@@ -56,13 +57,14 @@ const Search = ({ searchTerm, setSearchTerm }) => {
             return 0;
           });
           setSuggestions(unique.slice(0, 6));
+          setShowSuggestions(true);
         } catch (error) {
           console.error('Suggestions API error:', error);
           setSuggestions(['Suggestions unavailable']);
         }
-      };
-      fetchSuggestions();
-      setShowSuggestions(true);
+      }, 200); // 200ms debounce for suggestions
+
+      return () => clearTimeout(timeoutId);
     } else {
       setSuggestions([]);
       setShowSuggestions(false);

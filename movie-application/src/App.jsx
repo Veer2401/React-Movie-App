@@ -25,8 +25,28 @@ const App = () => {
   // Abort controller for in-flight search
   const searchAbortRef = useRef(null)
 
-  // Simple in-memory cache for search results in this session
+  // Enhanced in-memory cache for search results in this session
   const searchCacheRef = useRef(new Map())
+  
+  // Pre-warm cache with popular searches
+  useEffect(() => {
+    const popularSearches = ['action', 'comedy', 'drama', 'horror', 'romance']
+    popularSearches.forEach(term => {
+      if (!searchCacheRef.current.has(term)) {
+        // Pre-fetch popular searches in background
+        fetch(`${API_BASE_URL}/search/movie?query=${term}&page=1`, { 
+          method: 'GET', 
+          headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` } 
+        })
+        .then(res => res.json())
+        .then(data => {
+          const movies = (data.results || []).slice(0, 10).map(m => ({ ...m, media_type: 'movie' }))
+          searchCacheRef.current.set(term, movies)
+        })
+        .catch(() => {}) // Silent fail for pre-warming
+      }
+    })
+  }, [])
 
   const markNetflixForTvItems = async (tvItems) => {
     const controller = new AbortController()
@@ -75,6 +95,9 @@ const App = () => {
 
       if (!query) {
         // Default feed: mix of Hindi movies, Netflix/Hotstar/Prime TV, and popular movies
+        // Show loading state immediately
+        setMovieList([])
+        
         const [hindiRes, moviesRes, hotstarRes, primeRes, netflixRes] = await Promise.all([
           fetch(`${API_BASE_URL}/discover/movie?with_origin_country=IN&sort_by=popularity.desc&page=1`, { method: 'GET', headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` }, signal: controller.signal }),
           fetch(`${API_BASE_URL}/discover/movie?sort_by=popularity.desc&page=1`, { method: 'GET', headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` }, signal: controller.signal }),
@@ -144,7 +167,12 @@ const App = () => {
       const movies = (movieData.results || []).map((m) => ({ ...m, media_type: 'movie' }))
       const tvShows = (tvData.results || []).map((t) => ({ ...t, media_type: 'tv' }))
 
-      // Quick combine and show immediately
+      // Show first 10 results immediately for faster perceived performance
+      const immediateResults = [...movies.slice(0, 6), ...tvShows.slice(0, 4)]
+      setMovieList(immediateResults)
+      setIsLoading(false) // Stop loading early
+
+      // Then show full results
       const quickBuckets = [tvShows.slice(0, 6), movies.slice(0, 10), tvShows.slice(6, 12)]
       const mixed = []
       let j = 0
@@ -191,11 +219,11 @@ const App = () => {
     }
   }
 
-  // Debounce search for faster UX while typing
+  // Debounce search for better performance (300ms delay)
   useEffect(() => {
     const id = setTimeout(() => {
       fetchMovies(searchTerm)
-    }, 25)
+    }, 300)
     return () => clearTimeout(id)
   }, [searchTerm])
 
@@ -231,6 +259,7 @@ const App = () => {
           {isLoading ? (
             <div className="loading-spinner">
               <div className="spinner"></div>
+              <p className="text-center mt-4 text-gray-300">Searching for "{searchTerm}"...</p>
             </div>
           ) : errorMessage ? (
             <div className="error-container">
