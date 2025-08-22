@@ -151,6 +151,7 @@ const App = () => {
         setIsLoading(false)
         return
       }
+      
 
       // Search: movies + TV concurrently (fast); label Netflix in background
       const [movieRes, tvRes] = await Promise.all([
