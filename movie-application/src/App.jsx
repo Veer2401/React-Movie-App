@@ -98,9 +98,34 @@ const App = () => {
         }
       }
 
+      // Check Netflix availability for all movies in the mix
+      const dailyMixWithNetflix = await Promise.all(
+        dailyMix.map(async (movie) => {
+          try {
+            const response = await fetch(
+              `${API_BASE_URL}/movie/${movie.id}/watch/providers`, 
+              { 
+                method: 'GET', 
+                headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` } 
+              }
+            );
+            
+            if (response.ok) {
+              const data = await response.json();
+              const providers = data?.results?.IN?.flatrate || data?.results?.IN?.ads || [];
+              const isNetflix = Array.isArray(providers) && providers.some((p) => p.provider_id === PROVIDER.NETFLIX);
+              return { ...movie, isNetflix };
+            }
+            return movie;
+          } catch (error) {
+            return movie;
+          }
+        })
+      );
+
       // Cache today's mix
-      searchCacheRef.current.set(cacheKey, dailyMix);
-      return dailyMix;
+      searchCacheRef.current.set(cacheKey, dailyMixWithNetflix);
+      return dailyMixWithNetflix;
     } catch (error) {
       console.error('Error fetching daily movie mix:', error);
       return [];
@@ -268,8 +293,34 @@ const App = () => {
       setMovieList(immediateResults)
       setIsLoading(false) // Stop loading early
 
+      // Check Netflix availability for all search results
+      const allResults = [...tvShows, ...movies];
+      const resultsWithNetflix = await Promise.all(
+        allResults.map(async (item) => {
+          try {
+            const response = await fetch(
+              `${API_BASE_URL}/${item.media_type}/${item.id}/watch/providers`, 
+              { 
+                method: 'GET', 
+                headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` } 
+              }
+            );
+            
+            if (response.ok) {
+              const data = await response.json();
+              const providers = data?.results?.IN?.flatrate || data?.results?.IN?.ads || [];
+              const isNetflix = Array.isArray(providers) && providers.some((p) => p.provider_id === PROVIDER.NETFLIX);
+              return { ...item, isNetflix };
+            }
+            return item;
+          } catch (error) {
+            return item;
+          }
+        })
+      );
+
       // Then show full results
-      const quickBuckets = [tvShows.slice(0, 6), movies.slice(0, 10), tvShows.slice(6, 12)]
+      const quickBuckets = [resultsWithNetflix.slice(0, 6), resultsWithNetflix.slice(6, 16), resultsWithNetflix.slice(16, 22)]
       const mixed = []
       let j = 0
       const seenMix = new Set()
@@ -291,11 +342,11 @@ const App = () => {
         j++
       }
 
-      setMovieList(mixed.length ? mixed : [...tvShows, ...movies])
+      setMovieList(mixed.length ? mixed : resultsWithNetflix)
 
       // Cache the results for this query for faster subsequent loads
       if (normalizedKey) {
-        searchCacheRef.current.set(normalizedKey, mixed.length ? mixed : [...tvShows, ...movies])
+        searchCacheRef.current.set(normalizedKey, mixed.length ? mixed : resultsWithNetflix)
       }
 
       if (query && (mixed.length ? mixed : [...tvShows, ...movies]).length > 0) {

@@ -289,10 +289,13 @@
     background: #e50914;
     color: #fff;
     font-weight: 700;
-    font-size: 10px;
-    padding: 3px 6px;
-    border-radius: 4px;
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 6px;
     z-index: 10;
+    box-shadow: 0 2px 8px rgba(229, 9, 20, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
 
   .prime-badge {
@@ -1465,7 +1468,12 @@
   .movie-card .content .lang,
   .movie-card .content .year,
   .movie-card .content .media-type { font-size: 0.875rem; }
-  .netflix-badge, .prime-badge { top: 8px; padding: 3px 6px; font-size: 10px; border-radius: 4px; }
+  .netflix-badge, .prime-badge { 
+    top: 8px; 
+    padding: 4px 8px; 
+    font-size: 11px; 
+    border-radius: 6px; 
+  }
 
   /* Flip interactions */
   .flip-card:active { transform: scale(0.98); }
