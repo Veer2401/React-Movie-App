@@ -81,8 +81,12 @@
     }
   }
 
+  .search-filter-container {
+    @apply flex items-center justify-center gap-4 mt-6 sm:mt-8 md:mt-10 ;
+  }
+
   .search {
-    @apply w-full bg-light-100/5 px-3 py-2 sm:px-4 sm:py-3 rounded-lg mt-6 sm:mt-8 md:mt-10 max-w-full sm:max-w-2xl md:max-w-3xl mx-auto;
+    @apply bg-light-100/5 px-3 py-2 sm:px-4 sm:py-3 rounded-lg w-200;
 
     & div {
       @apply relative flex items-center;
@@ -98,6 +102,95 @@
       &:hover {
         cursor: pointer;
       }
+    }
+  }
+
+  /* Filter Component Styles */
+  .filter-container {
+    @apply relative inline-block ml-4;
+  }
+
+  .filter-button {
+    @apply bg-light-100/10 hover:bg-light-100/20 text-white p-3 rounded-lg transition-all duration-200 flex items-center justify-center relative;
+    min-width: 48px;
+    height: 48px;
+  }
+
+  .filter-icon {
+    @apply w-5 h-5;
+  }
+
+  .filter-badge {
+    @apply absolute -top-2 -right-2 bg-blue-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center;
+  }
+
+  .filter-dropdown {
+    @apply absolute top-full right-0 mt-2 bg-dark-100 border border-light-100/20 rounded-lg shadow-lg z-50 min-w-64;
+  }
+
+  .filter-header {
+    @apply flex items-center justify-between p-4 border-b border-light-100/10;
+  }
+
+  .filter-header h3 {
+    @apply text-white font-semibold text-sm;
+  }
+
+  .clear-filters-btn {
+    @apply text-blue-400 hover:text-blue-300 text-xs font-medium transition-colors;
+  }
+
+  .filter-options {
+    @apply p-2 max-h-64 overflow-y-auto;
+  }
+
+  .filter-option {
+    @apply flex items-center p-3 hover:bg-light-100/5 rounded cursor-pointer transition-colors;
+  }
+
+  .filter-option input[type="checkbox"] {
+    @apply hidden;
+  }
+
+  .checkmark {
+    @apply w-4 h-4 border-2 border-light-100/30 rounded mr-3 relative;
+  }
+
+  .filter-option input[type="checkbox"]:checked + .checkmark::after {
+    content: '';
+    @apply absolute top-0.5 left-0.5 w-2 h-2 bg-blue-500 rounded;
+  }
+
+  .language-name {
+    @apply text-white text-sm;
+  }
+
+  /* Mobile filter adjustments */
+  @media (max-width: 640px) {
+    .search-filter-container {
+      @apply flex-col gap-3;
+    }
+
+    .filter-container {
+      @apply ml-0;
+    }
+
+    .filter-button {
+      @apply p-2;
+      min-width: 40px;
+      height: 40px;
+    }
+
+    .filter-icon {
+      @apply w-4 h-4;
+    }
+
+    .filter-dropdown {
+      @apply right-0 left-0 min-w-auto;
+    }
+
+    .filter-options {
+      @apply max-h-48;
     }
   }
 

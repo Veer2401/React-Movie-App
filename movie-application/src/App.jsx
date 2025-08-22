@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import Search from './components/Search'
 import MovieCard from './components/MovieCard';
+import Filter from './components/Filter';
 // import SongCard from './components/SongCard';
 import { updateSearchCount } from './appwrite';
 import { isProduction } from './utils/env.js';
@@ -20,6 +21,8 @@ const App = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [movieList, setMovieList] = useState([])
+  const [filteredMovieList, setFilteredMovieList] = useState([])
+  const [selectedLanguages, setSelectedLanguages] = useState([])
   const [isLoading, setIsLoading] = useState(false)
 
   // Abort controller for in-flight search
@@ -220,6 +223,28 @@ const App = () => {
     }
   }
 
+  // Filter movies based on selected languages
+  useEffect(() => {
+    if (selectedLanguages.length === 0) {
+      setFilteredMovieList(movieList);
+    } else {
+      const filtered = movieList.filter(movie => {
+        const movieLanguage = movie.original_language?.toLowerCase();
+        
+        // Check if movie language matches any selected language
+        return selectedLanguages.some(selectedLang => {
+          if (selectedLang === 'other') {
+            // For "other languages", include languages not in the main list
+            const mainLanguages = ['en', 'hi', 'mr', 'ko', 'zh'];
+            return !mainLanguages.includes(movieLanguage);
+          }
+          return movieLanguage === selectedLang;
+        });
+      });
+      setFilteredMovieList(filtered);
+    }
+  }, [movieList, selectedLanguages]);
+
   // Debounce search for better performance (300ms delay)
   useEffect(() => {
     const id = setTimeout(() => {
@@ -249,7 +274,10 @@ const App = () => {
           <div className="center">
             <h1 className='content-center'>Type it. Find it.</h1>
           </div>
-          <Search searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+          <div className="search-filter-container">
+            <Search searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+            <Filter selectedLanguages={selectedLanguages} setSelectedLanguages={setSelectedLanguages} />
+          </div>
           <br />
           <h1 className='search-term'> <span className='text-gradient'>{searchTerm}</span></h1>
         </header>
@@ -272,14 +300,19 @@ const App = () => {
                 Retry
               </button>
             </div>
-          ) : movieList.length === 0 && searchTerm ? (
+          ) : filteredMovieList.length === 0 && (searchTerm || selectedLanguages.length > 0) ? (
             <div className="no-results">
-              <p className='text-gray-300 text-center text-lg'>No results found for "{searchTerm}"</p>
-              <p className='text-gray-500 text-center mt-2'>Try searching with different keywords</p>
+              <p className='text-gray-300 text-center text-lg'>
+                {searchTerm ? `No results found for "${searchTerm}"` : 'No movies found'}
+                {selectedLanguages.length > 0 && ` in selected languages`}
+              </p>
+              <p className='text-gray-500 text-center mt-2'>
+                {searchTerm ? 'Try searching with different keywords' : 'Try adjusting your language filters'}
+              </p>
             </div>
           ) : (
             <ul>
-              {movieList.map((item) => (
+              {filteredMovieList.map((item) => (
                 <MovieCard key={`${item.media_type || 'movie'}-${item.id}`} movie={item} />
               ))}
             </ul>
