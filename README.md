@@ -83,6 +83,13 @@ npm run dev
 
 ------------------------------------------------------------------------
 
+## 🛠️ Deployment
+
+-   This app is deployed on https://cinematicx.vercel.app/
+
+
+------------------------------------------------------------------------
+
 ## 🤝 Contributing
 
 -   Fork, create a branch, make your changes, and submit a PR
