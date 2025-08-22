@@ -1,7 +1,10 @@
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap");
 
-@import "tailwindcss";
+/* Tailwind CSS imports */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @theme {
   --color-primary: #030014;
@@ -28,7 +31,13 @@
   }
 
   h1 {
-    @apply mx-auto max-w-4xl text-center text-5xl font-bold leading-tight tracking-[-1%] text-white sm:text-[64px] sm:leading-[76px];
+    margin: 0 auto;
+    max-width: 56rem;
+    text-align: center;
+    font-size: 3rem;
+    font-weight: bold;
+    line-height: 1;
+    color: white;
   }
 
   .main-heading {
@@ -36,29 +45,50 @@
   }
 
   h2 {
-    @apply text-2xl font-bold text-white sm:text-3xl;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: white;
   }
 
   main {
-    @apply min-h-screen relative bg-primary;
+    min-height: 100vh;
+    position: relative;
+    background-color: #030014;
   }
 
   header {
-    @apply sm:mt-10 mt-5;
+    margin-top: 1.25rem;
   }
 
   header img {
-    @apply w-full max-w-lg h-auto object-contain mx-auto drop-shadow-md;
+    width: 100%;
+    max-width: 32rem;
+    height: auto;
+    object-fit: contain;
+    margin: 0 auto;
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
   }
 }
 
 @layer components {
   .pattern {
-    @apply bg-hero-pattern w-full h-screen bg-center bg-cover absolute z-0;
+    background-image: url('/hero-bg.png');
+    width: 100%;
+    height: 100vh;
+    background-position: center;
+    background-size: cover;
+    position: absolute;
+    z-index: 0;
   }
 
   .wrapper {
-    @apply px-5 py-12 xs:p-10 max-w-7xl mx-auto flex flex-col relative z-10;
+    padding: 3rem 1.25rem;
+    max-width: 80rem;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 10;
   }
 
   .trending {
@@ -82,23 +112,41 @@
   }
 
   .search {
-    @apply w-full bg-light-100/5 px-4 py-3 rounded-lg mt-10 max-w-3xl mx-auto;
+    width: 100%;
+    background-color: rgba(206, 206, 251, 0.05);
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    margin-top: 2.5rem;
+    max-width: 48rem;
+    margin-left: auto;
+    margin-right: auto;
+  }
 
-    & div {
-      @apply relative flex items-center;
-    }
+  .search div {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
 
-    & img {
-      @apply absolute left-2 h-5 w-5;
-    }
+  .search img {
+    position: absolute;
+    left: 0.5rem;
+    height: 1.25rem;
+    width: 1.25rem;
+  }
 
-    & input {
-      @apply w-full bg-transparent py-2 sm:pr-10 pl-10 text-base text-gray-200 placeholder-light-200 outline-hidden;
+  .search input {
+    width: 100%;
+    background: transparent;
+    padding: 0.5rem 0;
+    padding-left: 2.5rem;
+    font-size: 1rem;
+    color: #e5e7eb;
+    outline: none;
+  }
 
-      &:hover {
-        cursor: pointer;
-      }
-    }
+  .search input:hover {
+    cursor: pointer;
   }
 
   .all-movies {
