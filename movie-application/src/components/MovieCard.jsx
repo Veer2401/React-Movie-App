@@ -51,9 +51,13 @@ const MovieCard = ({ movie }) => {
   const watchHref = trailerUrl || (id ? `https://www.themoviedb.org/${media_type}/${id}` : '#');
 
   return (
-    <li className="movie-card flip-card">
+    <li className={`movie-card flip-card${isFlipped ? ' flipped' : ''}`}>
       <div className="flip-inner">
-        <div className="flip-front">
+        <div
+          className="flip-front"
+          onClick={() => setIsFlipped(true)}
+          style={{ cursor: 'pointer' }}
+        >
           {/* Poster and other content */}
           {movie.isNetflix && <div className="netflix-badge">Netflix</div>}
           {movie.isPrime && <div className="prime-badge">Prime video</div>}
@@ -79,7 +83,11 @@ const MovieCard = ({ movie }) => {
             <p className='media-type'>{media_type === 'tv' ? 'TV Series' : 'Movie'}</p>
           </div>
         </div>
-        <div className="flip-back">
+        <div
+          className="flip-back"
+          onClick={() => setIsFlipped(false)}
+          style={{ cursor: 'pointer' }}
+        >
           <div className={`movie-card ${isHindi ? 'hindi-movie' : ''}`}>
             <div className='mt-2 text-left'>
               <h3 className='mb-2'>{displayTitle}</h3>
