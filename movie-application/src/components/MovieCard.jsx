@@ -55,7 +55,7 @@ const MovieCard = ({ movie }) => {
       <div className="flip-inner">
         <div
           className="flip-front"
-          onClick={() => setIsFlipped(true)}
+          onClick={() => setIsFlipped((prev) => !prev)}
           style={{ cursor: 'pointer' }}
         >
           {/* Poster and other content */}
@@ -85,7 +85,7 @@ const MovieCard = ({ movie }) => {
         </div>
         <div
           className="flip-back"
-          onClick={() => setIsFlipped(false)}
+          onClick={() => setIsFlipped((prev) => !prev)}
           style={{ cursor: 'pointer' }}
         >
           <div className={`movie-card ${isHindi ? 'hindi-movie' : ''}`}>
