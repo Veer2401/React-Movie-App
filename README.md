@@ -78,7 +78,8 @@ npm run dev
 
 ## 📸 Screenshots / Demo
 
-(Add screenshots or GIFs here for homepage, search, flip-card view)
+<img width="1896" height="917" alt="Screenshot 2025-08-22 at 12 21 47 PM" src="https://github.com/user-attachments/assets/bcd29b3c-5f4d-4d4c-9324-ff3face721a2" />
+
 
 ------------------------------------------------------------------------
 
