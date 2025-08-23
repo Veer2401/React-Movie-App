@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 const Filter = ({ selectedLanguages, setSelectedLanguages }) => {
   const [isOpen, setIsOpen] = useState(false);
   const filterRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   const languages = [
     { code: 'en', name: 'English' },
@@ -24,6 +25,42 @@ const Filter = ({ selectedLanguages, setSelectedLanguages }) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Position dropdown correctly on mobile
+  useEffect(() => {
+    if (isOpen && dropdownRef.current) {
+      const dropdown = dropdownRef.current;
+      const button = filterRef.current;
+      
+      if (button && dropdown) {
+        const buttonRect = button.getBoundingClientRect();
+        const dropdownRect = dropdown.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        
+        // Check if dropdown would go off-screen to the right
+        if (buttonRect.left + dropdownRect.width > viewportWidth) {
+          dropdown.style.left = 'auto';
+          dropdown.style.right = '0';
+          dropdown.style.transform = 'none';
+        }
+        
+        // Check if dropdown would go off-screen to the left
+        if (buttonRect.left < 0) {
+          dropdown.style.left = '0';
+          dropdown.style.right = 'auto';
+          dropdown.style.transform = 'none';
+        }
+        
+        // Check if dropdown would go off-screen to the bottom
+        if (buttonRect.bottom + dropdownRect.height > viewportHeight) {
+          dropdown.classList.add('dropdown-above');
+        } else {
+          dropdown.classList.remove('dropdown-above');
+        }
+      }
+    }
+  }, [isOpen]);
 
   const toggleLanguage = (languageCode) => {
     setSelectedLanguages(prev => {
@@ -65,7 +102,7 @@ const Filter = ({ selectedLanguages, setSelectedLanguages }) => {
       </button>
 
       {isOpen && (
-        <div className="filter-dropdown">
+        <div className="filter-dropdown" ref={dropdownRef}>
           <div className="filter-header">
             <h3>Filter by Language</h3>
             {selectedLanguages.length > 0 && (

@@ -126,6 +126,19 @@
 
   .filter-dropdown {
     @apply absolute top-full right-0 mt-2 bg-dark-100 border border-light-100/20 rounded-lg shadow-lg z-50 min-w-64;
+    max-width: calc(100vw - 2rem);
+    width: max-content;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+  }
+
+  .filter-dropdown.dropdown-above {
+    top: auto;
+    bottom: 100%;
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.6);
   }
 
   .filter-header {
@@ -172,7 +185,7 @@
     }
 
     .filter-container {
-      @apply ml-0;
+      @apply ml-0 relative;
     }
 
     .filter-button {
@@ -186,11 +199,57 @@
     }
 
     .filter-dropdown {
-      @apply right-0 left-0 min-w-auto;
+      @apply min-w-auto;
+      left: 50%;
+      right: auto;
+      transform: translateX(-50%);
+      max-width: calc(100vw - 2rem);
+      width: max-content;
+      margin-top: 0.5rem;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
     }
 
     .filter-options {
       @apply max-h-48;
+    }
+  }
+
+  /* Extra small mobile devices */
+  @media (max-width: 480px) {
+    .filter-dropdown {
+      max-width: calc(100vw - 1rem);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+    }
+    
+    .filter-header {
+      @apply p-3;
+    }
+    
+    .filter-options {
+      @apply p-1;
+    }
+    
+    .filter-option {
+      @apply p-2;
+    }
+  }
+
+  /* Very small mobile devices */
+  @media (max-width: 360px) {
+    .filter-dropdown {
+      max-width: calc(100vw - 0.5rem);
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    
+    .filter-header h3 {
+      @apply text-xs;
+    }
+    
+    .language-name {
+      @apply text-xs;
     }
   }
 
