@@ -92,6 +92,7 @@ npm run dev
 
 ## 🤝 Contributing
 
+-   Feel free to contribute
 -   Fork, create a branch, make your changes, and submit a PR
 
 ------------------------------------------------------------------------
