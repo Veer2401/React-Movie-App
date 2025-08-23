@@ -78,6 +78,9 @@ npm run dev
 
 ## 📸 Screenshots / Demo
 
+
+<img width="1894" height="905" alt="Screenshot 2025-08-23 at 11 17 11 PM" src="https://github.com/user-attachments/assets/501ad2b4-bf16-4959-baa9-3d3be43c9577" />
+<img width="1895" height="904" alt="Screenshot 2025-08-23 at 11 16 47 PM" src="https://github.com/user-attachments/assets/4c47c637-1a75-427f-9c90-0c74080626b1" />
 <img width="1896" height="917" alt="Screenshot 2025-08-22 at 12 21 47 PM" src="https://github.com/user-attachments/assets/bcd29b3c-5f4d-4d4c-9324-ff3face721a2" />
 
 
