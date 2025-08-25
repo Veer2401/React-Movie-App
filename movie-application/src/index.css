@@ -1554,3 +1554,8 @@
   border: 4px solid;
   border-image: linear-gradient(90deg, #ff0080, #7928ca, #2af598, #fecfef) 1;
 }
+
+.cinematic-gradient-border img {
+  border-radius: 12px;
+  display: block;
+}
