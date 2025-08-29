@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import Search from './components/Search'
 import MovieCard from './components/MovieCard';
 import Filter from './components/Filter';
+import DetailsDrawer from './components/DetailsDrawer';
 // import SongCard from './components/SongCard';
 import { updateSearchCount } from './appwrite';
 import { isProduction } from './utils/env.js';
@@ -24,6 +25,11 @@ const App = () => {
   const [filteredMovieList, setFilteredMovieList] = useState([])
   const [selectedLanguages, setSelectedLanguages] = useState([])
   const [isLoading, setIsLoading] = useState(false)
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [selectedItem, setSelectedItem] = useState(null)
+  const [credits, setCredits] = useState(null)
+  const [isCreditsLoading, setIsCreditsLoading] = useState(false)
+  const [flippedItemKey, setFlippedItemKey] = useState(null)
 
   // Abort controller for in-flight search
   const searchAbortRef = useRef(null)
@@ -98,34 +104,9 @@ const App = () => {
         }
       }
 
-      // Check Netflix availability for all movies in the mix
-      const dailyMixWithNetflix = await Promise.all(
-        dailyMix.map(async (movie) => {
-          try {
-            const response = await fetch(
-              `${API_BASE_URL}/movie/${movie.id}/watch/providers`, 
-              { 
-                method: 'GET', 
-                headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` } 
-              }
-            );
-            
-            if (response.ok) {
-              const data = await response.json();
-              const providers = data?.results?.IN?.flatrate || data?.results?.IN?.ads || [];
-              const isNetflix = Array.isArray(providers) && providers.some((p) => p.provider_id === PROVIDER.NETFLIX);
-              return { ...movie, isNetflix };
-            }
-            return movie;
-          } catch (error) {
-            return movie;
-          }
-        })
-      );
-
-      // Cache today's mix
-      searchCacheRef.current.set(cacheKey, dailyMixWithNetflix);
-      return dailyMixWithNetflix;
+      // Fast path: skip provider checks on initial load for speed
+      searchCacheRef.current.set(cacheKey, dailyMix);
+      return dailyMix;
     } catch (error) {
       console.error('Error fetching daily movie mix:', error);
       return [];
@@ -366,6 +347,55 @@ const App = () => {
     }
   }
 
+  const openDetails = async (item) => {
+    if (!item?.id) return
+    setSelectedItem(item)
+    setIsDrawerOpen(true)
+    setIsCreditsLoading(true)
+    setCredits(null)
+    try {
+      const res = await fetch(`${API_BASE_URL}/${item.media_type}/${item.id}/credits`, {
+        method: 'GET',
+        headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` }
+      })
+      if (!res.ok) throw new Error('Failed to fetch credits')
+      const data = await res.json()
+      setCredits(data)
+    } catch (e) {
+      console.error('Error fetching credits:', e)
+      setCredits({ cast: [], crew: [] })
+    } finally {
+      setIsCreditsLoading(false)
+    }
+  }
+
+  const closeDetails = () => {
+    setIsDrawerOpen(false)
+    // keep selected to allow exit animation; clear later if needed
+  }
+
+  const handleCardClick = (item) => {
+    if (!item) return
+    const key = `${item.media_type || 'movie'}-${item.id}`
+    if (flippedItemKey === key) {
+      setFlippedItemKey(null)
+      closeDetails()
+    } else {
+      setFlippedItemKey(key)
+      openDetails(item)
+    }
+  }
+
+  // Click outside to reset flipped card and close drawer
+  useEffect(() => {
+    const handleGlobalClick = () => {
+      if (flippedItemKey) setFlippedItemKey(null)
+      if (isDrawerOpen) closeDetails()
+    }
+    document.addEventListener('click', handleGlobalClick)
+    return () => document.removeEventListener('click', handleGlobalClick)
+  }, [flippedItemKey, isDrawerOpen])
+
   // Filter movies based on selected languages
   useEffect(() => {
     if (selectedLanguages.length === 0) {
@@ -487,12 +517,27 @@ const App = () => {
             </div>
           ) : (
             <ul>
-              {filteredMovieList.map((item) => (
-                <MovieCard key={`${item.media_type || 'movie'}-${item.id}`} movie={item} />
-              ))}
+              {filteredMovieList.map((item) => {
+                const key = `${item.media_type || 'movie'}-${item.id}`
+                return (
+                  <MovieCard
+                    key={key}
+                    movie={item}
+                    isFlipped={flippedItemKey === key}
+                    onCardClick={() => handleCardClick(item)}
+                  />
+                )
+              })}
             </ul>
           )}
         </section>
+        <DetailsDrawer
+          isOpen={isDrawerOpen}
+          onClose={closeDetails}
+          item={selectedItem}
+          credits={credits}
+          isLoading={isCreditsLoading}
+        />
         <div className="footer">
           <h2>Made with ❤️ by <a href="https://github.com/Veer2401" target="_blank" rel="noopener noreferrer">Veer </a></h2>
           <p>Powered by <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer">TMDB</a></p>

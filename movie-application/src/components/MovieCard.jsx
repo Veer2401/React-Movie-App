@@ -13,10 +13,16 @@ const API_OPTIONS = {
   }
 }
 
-const MovieCard = ({ movie }) => {
+const MovieCard = ({ movie, isFlipped: isFlippedProp, onCardClick }) => {
   const { id, title, name, vote_average, poster_path, release_date, first_air_date, original_language, overview, media_type, isHindi, isNetflix, isPrime } = movie || {};
 
   const [isFlipped, setIsFlipped] = useState(false);
+
+  useEffect(() => {
+    if (typeof isFlippedProp === 'boolean') {
+      setIsFlipped(isFlippedProp)
+    }
+  }, [isFlippedProp])
   const [trailerUrl, setTrailerUrl] = useState('');
 
   // Use title for movies, name for TV shows
@@ -55,7 +61,7 @@ const MovieCard = ({ movie }) => {
       <div className="flip-inner">
         <div
           className="flip-front"
-          onClick={() => setIsFlipped((prev) => !prev)}
+          onClick={(e) => { e.stopPropagation(); onCardClick && onCardClick(); }}
           style={{ cursor: 'pointer' }}
         >
           {/* Poster and other content */}
@@ -85,7 +91,7 @@ const MovieCard = ({ movie }) => {
         </div>
         <div
           className="flip-back"
-          onClick={() => setIsFlipped((prev) => !prev)}
+          onClick={(e) => { e.stopPropagation(); onCardClick && onCardClick(); }}
           style={{ cursor: 'pointer' }}
         >
           <div className={`movie-card ${isHindi ? 'hindi-movie' : ''}`}>
