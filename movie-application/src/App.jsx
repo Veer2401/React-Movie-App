@@ -475,7 +475,7 @@ const App = () => {
           />
           <br />
           {/* <h1>Cinematic<span className='text-gradient'>X</span></h1> */}
-          <h1>Your <span className="text-gradient">Stream </span> Dictionary 🎬</h1>
+          <h1>Your <span className="text-gradient">Content </span> Dictionary 🎬</h1>
           <div className="center">
             <h1 className='content-center'>Type it. Find it.</h1>
           </div>
