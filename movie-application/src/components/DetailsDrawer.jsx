@@ -69,7 +69,7 @@ const DetailsDrawer = ({ isOpen, onClose, item, credits, isLoading }) => {
       >
         <div className="p-5 border-b border-light-100/10 flex items-start gap-3">
           <button
-            className="text-white/70 hover:text-white text-xl leading-none"
+            className="text-white/70 text-xl leading-none"
             onClick={onClose}
             aria-label="Close details"
           >
