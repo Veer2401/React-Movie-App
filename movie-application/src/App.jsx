@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import Search from './components/Search'
 import MovieCard from './components/MovieCard';
 import Filter from './components/Filter';
@@ -22,8 +22,8 @@ const App = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [movieList, setMovieList] = useState([])
-  const [filteredMovieList, setFilteredMovieList] = useState([])
   const [selectedLanguages, setSelectedLanguages] = useState([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState(null)
@@ -155,21 +155,32 @@ const App = () => {
   // Pre-warm cache with popular searches
   useEffect(() => {
     const popularSearches = ['action', 'comedy', 'drama', 'horror', 'romance']
-    popularSearches.forEach(term => {
-      if (!searchCacheRef.current.has(term)) {
-        // Pre-fetch popular searches in background
-        fetch(`${API_BASE_URL}/search/movie?query=${term}&page=1`, { 
-          method: 'GET', 
-          headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` } 
-        })
-        .then(res => res.json())
-        .then(data => {
-          const movies = (data.results || []).slice(0, 10).map(m => ({ ...m, media_type: 'movie' }))
-          searchCacheRef.current.set(term, movies)
-        })
-        .catch(() => {}) // Silent fail for pre-warming
-      }
-    })
+    
+    const prewarmCache = () => {
+      popularSearches.forEach(term => {
+        if (!searchCacheRef.current.has(term)) {
+          // Pre-fetch popular searches in background
+          fetch(`${API_BASE_URL}/search/movie?query=${term}&page=1`, { 
+            method: 'GET', 
+            headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` } 
+          })
+          .then(res => res.json())
+          .then(data => {
+            const movies = (data.results || []).slice(0, 10).map(m => ({ ...m, media_type: 'movie' }))
+            searchCacheRef.current.set(term, movies)
+          })
+          .catch(() => {}) // Silent fail for pre-warming
+        }
+      },100)
+    }
+    
+    // Use requestIdleCallback for better performance
+    if (window.requestIdleCallback) {
+      window.requestIdleCallback(prewarmCache, { timeout: 1000 })
+    } else {
+      // Fallback for browsers that don't support requestIdleCallback
+      setTimeout(prewarmCache, 1000)
+    }
   }, [])
 
   const markProvidersForTvItems = async (tvItems) => {
@@ -201,7 +212,7 @@ const App = () => {
     }
   }
 
-  const fetchMovies = async (query = '') => {
+  const fetchMovies = useCallback(async (query = '') => {
     // cancel previous
     if (searchAbortRef.current) {
       searchAbortRef.current.abort()
@@ -407,9 +418,9 @@ const App = () => {
     } finally {
       if (!searchAbortRef.current?.signal.aborted) setIsLoading(false)
     }
-  }
+  }, [])
 
-  const openDetails = async (item) => {
+  const openDetails = useCallback(async (item) => {
     if (!item?.id) return
     setSelectedItem(item)
     setIsDrawerOpen(true)
@@ -429,16 +440,18 @@ const App = () => {
     } finally {
       setIsCreditsLoading(false)
     }
-  }
+  }, [])
 
-  const closeDetails = () => {
+  const closeDetails = useCallback(() => {
     setIsDrawerOpen(false)
     // keep selected to allow exit animation; clear later if needed
-  }
+  }, [])
 
-  const handleCardClick = (item) => {
+  const handleCardClick = useCallback((item) => {
     if (!item) return
     const key = `${item.media_type || 'movie'}-${item.id}`
+    // Hide search suggestions when a card is clicked
+    setShowSuggestions(false)
     if (flippedItemKey === key) {
       setFlippedItemKey(null)
       closeDetails()
@@ -446,7 +459,7 @@ const App = () => {
       setFlippedItemKey(key)
       openDetails(item)
     }
-  }
+  }, [flippedItemKey, openDetails, setShowSuggestions])
 
   // Click outside to reset flipped card and close drawer
   useEffect(() => {
@@ -456,14 +469,14 @@ const App = () => {
     }
     document.addEventListener('click', handleGlobalClick)
     return () => document.removeEventListener('click', handleGlobalClick)
-  }, [flippedItemKey, isDrawerOpen])
+  }, [flippedItemKey, isDrawerOpen, closeDetails])
 
   // Filter movies based on selected languages
-  useEffect(() => {
+  const filteredMovieList = useMemo(() => {
     if (selectedLanguages.length === 0) {
-      setFilteredMovieList(movieList);
+      return movieList;
     } else {
-      const filtered = movieList.filter(movie => {
+      return movieList.filter(movie => {
         const movieLanguage = movie.original_language?.toLowerCase();
         
         // Check if movie language matches any selected language
@@ -476,7 +489,6 @@ const App = () => {
           return movieLanguage === selectedLang;
         });
       });
-      setFilteredMovieList(filtered);
     }
   }, [movieList, selectedLanguages]);
 
@@ -579,7 +591,13 @@ const App = () => {
             <h1 className='content-center'>Type it. Find it.</h1>
           </div>
           <div className="search-filter-container">
-            <Search searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+            <Search 
+              searchTerm={searchTerm} 
+              setSearchTerm={setSearchTerm} 
+              onSuggestionSelect={() => setShowSuggestions(false)}
+              showSuggestions={showSuggestions}
+              setShowSuggestions={setShowSuggestions}
+            />
             <Filter selectedLanguages={selectedLanguages} setSelectedLanguages={setSelectedLanguages} />
           </div>
           <br />
@@ -634,7 +652,7 @@ const App = () => {
               </p>
             </div>
           ) : (
-            <ul>
+            <ul style={{ contain: 'layout style' }}>
               {filteredMovieList.map((item) => {
                 const key = `${item.media_type || 'movie'}-${item.id}`
                 return (

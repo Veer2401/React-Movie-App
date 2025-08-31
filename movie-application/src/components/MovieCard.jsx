@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo, useCallback } from 'react'
 import { isProduction } from '../utils/env.js';
 
 // API config - TMDB always uses HTTPS
@@ -13,7 +13,7 @@ const API_OPTIONS = {
   }
 }
 
-const MovieCard = ({ movie, isFlipped: isFlippedProp, onCardClick }) => {
+const MovieCard = React.memo(({ movie, isFlipped: isFlippedProp, onCardClick }) => {
   const { id, title, name, vote_average, poster_path, release_date, first_air_date, original_language, overview, media_type, isHindi, isNetflix, isPrime } = movie || {};
   
   // Debug logging
@@ -31,9 +31,9 @@ const MovieCard = ({ movie, isFlipped: isFlippedProp, onCardClick }) => {
   const [trailerUrl, setTrailerUrl] = useState('');
 
   // Use title for movies, name for TV shows
-  const displayTitle = title || name;
+  const displayTitle = useMemo(() => title || name, [title, name]);
   // Use release_date for movies, first_air_date for TV shows
-  const displayDate = release_date || first_air_date;
+  const displayDate = useMemo(() => release_date || first_air_date, [release_date, first_air_date]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -59,7 +59,10 @@ const MovieCard = ({ movie, isFlipped: isFlippedProp, onCardClick }) => {
     };
   }, [id, media_type]);
 
-  const watchHref = trailerUrl || (id ? `https://www.themoviedb.org/${media_type}/${id}` : '#');
+  const watchHref = useMemo(() => 
+    trailerUrl || (id ? `https://www.themoviedb.org/${media_type}/${id}` : '#'), 
+    [trailerUrl, id, media_type]
+  );
 
   return (
     <li className={`movie-card flip-card${isFlipped ? ' flipped' : ''}`}>
@@ -75,6 +78,7 @@ const MovieCard = ({ movie, isFlipped: isFlippedProp, onCardClick }) => {
           <img 
             src={poster_path ? `https://image.tmdb.org/t/p/w500${poster_path}` : '/no-movie.png'} 
             alt={displayTitle || "No Title"} 
+            loading="lazy"
             onError={(e) => {
               e.target.src = '/no-movie.png';
               e.target.alt = 'Poster not available';
@@ -163,6 +167,6 @@ const MovieCard = ({ movie, isFlipped: isFlippedProp, onCardClick }) => {
       </div>
     </li>
   )
-}
+});
 
-export default MovieCard
+export default MovieCard;

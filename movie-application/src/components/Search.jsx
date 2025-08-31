@@ -11,9 +11,8 @@ const API_OPTIONS = {
   }
 };
 
-const Search = ({ searchTerm, setSearchTerm }) => {
+const Search = ({ searchTerm, setSearchTerm, onSuggestionSelect, showSuggestions, setShowSuggestions }) => {
   const [suggestions, setSuggestions] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef(null);
 
   // Debounced suggestions for better performance
@@ -91,7 +90,11 @@ const Search = ({ searchTerm, setSearchTerm }) => {
           value={searchTerm}
           onChange={e => {
             setSearchTerm(e.target.value);
-            setShowSuggestions(true);
+            if (e.target.value.trim()) {
+              setShowSuggestions(true);
+            } else {
+              setShowSuggestions(false);
+            }
           }}
           placeholder="Search movies, series..."
           className="cursor-pointer"
@@ -120,6 +123,9 @@ const Search = ({ searchTerm, setSearchTerm }) => {
               onClick={() => {
                 setSearchTerm(suggestion);
                 setShowSuggestions(false);
+                if (onSuggestionSelect) {
+                  onSuggestionSelect();
+                }
               }}
             >
               {suggestion}
