@@ -91,7 +91,7 @@ npm run dev
 -   This app is deployed on https://cinematicx.vercel.app/
 
 
-------------------------------------------------------------------------
+
 
 ## 🤝 Contributing
 

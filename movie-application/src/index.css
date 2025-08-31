@@ -85,6 +85,8 @@
     @apply flex items-center justify-center gap-4 mt-6 sm:mt-8 md:mt-10 ;
   }
 
+
+
   .search {
     @apply bg-light-100/5 px-3 py-2 sm:px-4 sm:py-3 rounded-lg w-200;
 
@@ -263,6 +265,8 @@
     margin-bottom: 80px; /* Reduced for mobile */
   }
 
+
+
   .all-movies h2 {
     @apply text-white text-xl sm:text-2xl md:text-3xl font-bold mb-4 sm:mb-6 text-center px-4;
   }
@@ -340,6 +344,8 @@
       box-shadow: 0 0 20px rgba(249, 115, 22, 0.1);
     }
   }
+
+
 
   .netflix-badge {
     position: absolute;

@@ -418,6 +418,8 @@ const App = () => {
     }
   }, [movieList, selectedLanguages]);
 
+
+
   // Check for date change and refresh daily mix
   useEffect(() => {
     const checkDateChange = () => {
@@ -449,6 +451,8 @@ const App = () => {
 
     return () => clearInterval(interval);
   }, [searchTerm]);
+
+
 
   // Debounce search for better performance (300ms delay)
   useEffect(() => {
