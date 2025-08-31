@@ -15,6 +15,11 @@ const API_OPTIONS = {
 
 const MovieCard = ({ movie, isFlipped: isFlippedProp, onCardClick }) => {
   const { id, title, name, vote_average, poster_path, release_date, first_air_date, original_language, overview, media_type, isHindi, isNetflix, isPrime } = movie || {};
+  
+  // Debug logging
+  if (isPrime) {
+    console.log(`MovieCard - Prime Video detected for: ${title || name}`, movie);
+  }
 
   const [isFlipped, setIsFlipped] = useState(false);
 
@@ -122,20 +127,33 @@ const MovieCard = ({ movie, isFlipped: isFlippedProp, onCardClick }) => {
                 Watch trailer
               </a>
 
-              {/* Watch on section - only for Netflix */}
-              {isNetflix && (
+              {/* Watch on section - for Netflix and Prime Video */}
+              {(isNetflix || isPrime) && (
                 <div className='mt-4'>
                   <p className='text-gray-100 text-sm mb-2'>Watch on:</p>
-                  <div className='flex gap-2'>
-                    <a
-                      href={`https://www.netflix.com/search?q=${encodeURIComponent(displayTitle)}`}
-                      target='_blank'
-                      rel='noreferrer'
-                      onClick={(e) => e.stopPropagation()}
-                      className='bg-red-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-red-700 transition-colors cursor-pointer'
-                    >
-                      Netflix
-                    </a>
+                  <div className='flex gap-2 flex-wrap'>
+                    {isNetflix && (
+                      <a
+                        href={`https://www.netflix.com/search?q=${encodeURIComponent(displayTitle)}`}
+                        target='_blank'
+                        rel='noreferrer'
+                        onClick={(e) => e.stopPropagation()}
+                        className='bg-red-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-red-700 transition-colors cursor-pointer'
+                      >
+                        Netflix
+                      </a>
+                    )}
+                    {isPrime && (
+                      <a
+                        href={`https://www.primevideo.com/search/ref=atv_sr_sug?queryText=${encodeURIComponent(displayTitle)}`}
+                        target='_blank'
+                        rel='noreferrer'
+                        onClick={(e) => e.stopPropagation()}
+                        className='bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-blue-700 transition-colors cursor-pointer'
+                      >
+                        Prime Video
+                      </a>
+                    )}
                   </div>
                 </div>
               )}

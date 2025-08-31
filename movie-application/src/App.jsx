@@ -30,6 +30,7 @@ const App = () => {
   const [credits, setCredits] = useState(null)
   const [isCreditsLoading, setIsCreditsLoading] = useState(false)
   const [flippedItemKey, setFlippedItemKey] = useState(null)
+  const [lastRefreshTime, setLastRefreshTime] = useState(new Date())
 
   // Abort controller for in-flight search
   const searchAbortRef = useRef(null)
@@ -104,9 +105,47 @@ const App = () => {
         }
       }
 
-      // Fast path: skip provider checks on initial load for speed
-      searchCacheRef.current.set(cacheKey, dailyMix);
-      return dailyMix;
+      // Check Prime Video availability for daily mix
+      const dailyMixWithProviders = await Promise.all(
+        dailyMix.map(async (movie) => {
+          try {
+            const response = await fetch(
+              `${API_BASE_URL}/movie/${movie.id}/watch/providers`, 
+              { 
+                method: 'GET', 
+                headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` } 
+              }
+            );
+            
+            if (response.ok) {
+              const data = await response.json();
+              // Check multiple regions for Prime Video availability
+              const inProviders = data?.results?.IN?.flatrate || data?.results?.IN?.ads || [];
+              const usProviders = data?.results?.US?.flatrate || data?.results?.US?.ads || [];
+              const allProviders = [...inProviders, ...usProviders];
+              
+              const isPrime = Array.isArray(allProviders) && allProviders.some((p) => p.provider_id === PROVIDER.PRIME);
+              
+              // Debug logging for all movies to see what providers are available
+              console.log(`Daily mix - ${movie.title}:`, {
+                inProviders: inProviders,
+                usProviders: usProviders,
+                allProviders: allProviders,
+                isPrime: isPrime,
+                providerIds: allProviders.map(p => p.provider_id)
+              });
+              
+              return { ...movie, isPrime };
+            }
+            return movie;
+          } catch (error) {
+            return movie;
+          }
+        })
+      );
+      
+      searchCacheRef.current.set(cacheKey, dailyMixWithProviders);
+      return dailyMixWithProviders;
     } catch (error) {
       console.error('Error fetching daily movie mix:', error);
       return [];
@@ -133,7 +172,7 @@ const App = () => {
     })
   }, [])
 
-  const markNetflixForTvItems = async (tvItems) => {
+  const markProvidersForTvItems = async (tvItems) => {
     const controller = new AbortController()
     const toCheck = tvItems.slice(0, 8)
     try {
@@ -143,9 +182,14 @@ const App = () => {
             const res = await fetch(`${API_BASE_URL}/tv/${item.id}/watch/providers`, { method: 'GET', headers: { accept: 'application/json', Authorization: `Bearer ${API_KEY}` }, signal: controller.signal })
             if (!res.ok) return item
             const data = await res.json()
-            const providers = data?.results?.IN?.flatrate || data?.results?.IN?.ads || []
-            const isNetflix = Array.isArray(providers) && providers.some((p) => p.provider_id === PROVIDER.NETFLIX)
-            return { ...item, isNetflix }
+            // Check multiple regions for provider availability
+            const inProviders = data?.results?.IN?.flatrate || data?.results?.IN?.ads || []
+            const usProviders = data?.results?.US?.flatrate || data?.results?.US?.ads || []
+            const allProviders = [...inProviders, ...usProviders]
+            
+            const isNetflix = Array.isArray(allProviders) && allProviders.some((p) => p.provider_id === PROVIDER.NETFLIX)
+            const isPrime = Array.isArray(allProviders) && allProviders.some((p) => p.provider_id === PROVIDER.PRIME)
+            return { ...item, isNetflix, isPrime }
           } catch {
             return item
           }
@@ -190,6 +234,7 @@ const App = () => {
           
           if (dailyMix.length > 0) {
             setMovieList(dailyMix);
+            setLastRefreshTime(new Date());
           } else {
             // Fallback to original logic if daily mix fails
             const [hindiRes, moviesRes, hotstarRes, primeRes, netflixRes] = await Promise.all([
@@ -213,7 +258,7 @@ const App = () => {
             const hindiMovies = (hindiData.results || []).map((m) => ({ ...m, media_type: 'movie', isHindi: true }))
             const movies = (moviesData.results || []).map((m) => ({ ...m, media_type: 'movie' }))
             const hotstarTv = (hotstarData.results || []).map((t) => ({ ...t, media_type: 'tv' }))
-            const primeTv = (primeData.results || []).map((t) => ({ ...t, media_type: 'tv' }))
+            const primeTv = (primeData.results || []).map((t) => ({ ...t, media_type: 'tv', isPrime: true }))
             const netflixTv = (netflixData.results || []).map((t) => ({ ...t, media_type: 'tv', isNetflix: true }))
 
             // Interleave to ensure a balanced mix at the top
@@ -274,9 +319,9 @@ const App = () => {
       setMovieList(immediateResults)
       setIsLoading(false) // Stop loading early
 
-      // Check Netflix availability for all search results
+      // Check Netflix and Prime Video availability for all search results
       const allResults = [...tvShows, ...movies];
-      const resultsWithNetflix = await Promise.all(
+      const resultsWithProviders = await Promise.all(
         allResults.map(async (item) => {
           try {
             const response = await fetch(
@@ -289,9 +334,25 @@ const App = () => {
             
             if (response.ok) {
               const data = await response.json();
-              const providers = data?.results?.IN?.flatrate || data?.results?.IN?.ads || [];
-              const isNetflix = Array.isArray(providers) && providers.some((p) => p.provider_id === PROVIDER.NETFLIX);
-              return { ...item, isNetflix };
+              // Check multiple regions for provider availability
+              const inProviders = data?.results?.IN?.flatrate || data?.results?.IN?.ads || [];
+              const usProviders = data?.results?.US?.flatrate || data?.results?.US?.ads || [];
+              const allProviders = [...inProviders, ...usProviders];
+              
+              const isNetflix = Array.isArray(allProviders) && allProviders.some((p) => p.provider_id === PROVIDER.NETFLIX);
+              const isPrime = Array.isArray(allProviders) && allProviders.some((p) => p.provider_id === PROVIDER.PRIME);
+              
+              // Debug logging for all items to see what providers are available
+              console.log(`Search - ${item.title || item.name}:`, {
+                inProviders: inProviders,
+                usProviders: usProviders,
+                allProviders: allProviders,
+                isNetflix: isNetflix,
+                isPrime: isPrime,
+                providerIds: allProviders.map(p => p.provider_id)
+              });
+              
+              return { ...item, isNetflix, isPrime };
             }
             return item;
           } catch (error) {
@@ -301,7 +362,7 @@ const App = () => {
       );
 
       // Then show full results
-      const quickBuckets = [resultsWithNetflix.slice(0, 6), resultsWithNetflix.slice(6, 16), resultsWithNetflix.slice(16, 22)]
+      const quickBuckets = [resultsWithProviders.slice(0, 6), resultsWithProviders.slice(6, 16), resultsWithProviders.slice(16, 22)]
       const mixed = []
       let j = 0
       const seenMix = new Set()
@@ -323,11 +384,12 @@ const App = () => {
         j++
       }
 
-      setMovieList(mixed.length ? mixed : resultsWithNetflix)
+      setMovieList(mixed.length ? mixed : resultsWithProviders)
+      setLastRefreshTime(new Date())
 
       // Cache the results for this query for faster subsequent loads
       if (normalizedKey) {
-        searchCacheRef.current.set(normalizedKey, mixed.length ? mixed : resultsWithNetflix)
+        searchCacheRef.current.set(normalizedKey, mixed.length ? mixed : resultsWithProviders)
       }
 
       if (query && (mixed.length ? mixed : [...tvShows, ...movies]).length > 0) {
@@ -452,6 +514,39 @@ const App = () => {
     return () => clearInterval(interval);
   }, [searchTerm]);
 
+  // Hourly refresh mechanism for movie content
+  useEffect(() => {
+    const checkHourlyRefresh = () => {
+      const now = new Date();
+      const currentHour = now.getHours();
+      const lastHourCheck = localStorage.getItem('lastHourlyRefresh');
+      
+      if (lastHourCheck !== currentHour.toString()) {
+        // Hour changed, clear all caches and refresh
+        localStorage.setItem('lastHourlyRefresh', currentHour.toString());
+        
+        // Clear all cached data
+        searchCacheRef.current.clear();
+        
+        // Clear daily mix date to force refresh
+        localStorage.removeItem('lastDailyMixDate');
+        
+        // Refresh movies if no search term
+        if (!searchTerm) {
+          console.log('Hourly refresh: Loading new movie content...');
+          setLastRefreshTime(new Date());
+          fetchMovies('');
+        }
+      }
+    };
+
+    // Check on mount and set up interval
+    checkHourlyRefresh();
+    const hourlyInterval = setInterval(checkHourlyRefresh, 60000); // Check every minute
+
+    return () => clearInterval(hourlyInterval);
+  }, [searchTerm]);
+
 
 
   // Debounce search for better performance (300ms delay)
@@ -489,6 +584,25 @@ const App = () => {
           </div>
           <br />
           <h1 className='search-term'> <span className='text-gradient'>{searchTerm}</span></h1>
+          
+          {/* Manual refresh button */}
+          {!searchTerm && (
+            <div className="refresh-indicator">
+              <button
+                onClick={() => {
+                  setLastRefreshTime(new Date());
+                  searchCacheRef.current.clear();
+                  localStorage.removeItem('lastDailyMixDate');
+                  localStorage.removeItem('lastHourlyRefresh');
+                  fetchMovies('');
+                }}
+                className="refresh-btn"
+                title="Refresh content now"
+              >
+                Fresh Drop 🔥
+              </button>
+            </div>
+          )}
         </header>
 
         <section className='all-movies'>

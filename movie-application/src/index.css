@@ -85,6 +85,26 @@
     @apply flex items-center justify-center gap-4 mt-6 sm:mt-8 md:mt-10 ;
   }
 
+  .refresh-indicator {
+    @apply text-center mt-2 mb-4;
+  }
+
+  .refresh-indicator p {
+    @apply text-xs sm:text-sm text-gray-400 opacity-80;
+  }
+
+  .refresh-btn {
+    @apply mt-3 bg-[#38bdf8] hover:bg-[#0ea5e9] text-white text-sm px-6 py-3 rounded-lg transition-all duration-300 font-semibold shadow-lg;
+  }
+
+  .refresh-btn:hover {
+    @apply transform scale-105 shadow-xl;
+  }
+
+  .refresh-btn:active {
+    @apply transform scale-95;
+  }
+
 
 
   .search {
@@ -99,11 +119,23 @@
     }
 
     & input {
-      @apply w-full bg-transparent py-2 pl-8 sm:pl-10 pr-2 sm:pr-10 text-sm sm:text-base text-gray-200 placeholder-light-200 outline-none;
+      @apply w-full bg-transparent py-2 pl-8 sm:pl-10 pr-8 sm:pr-12 text-sm sm:text-base text-gray-200 placeholder-light-200 outline-none;
 
       &:hover {
         cursor: pointer;
       }
+    }
+
+    & .clear-search-btn {
+      @apply absolute right-2 top-1/2 -translate-y-1/2 bg-light-100/20 hover:bg-light-100/30 text-light-200 hover:text-white text-sm font-bold w-6 h-6 rounded-full cursor-pointer flex items-center justify-center transition-all duration-200 z-10;
+    }
+
+    & .clear-search-btn:hover {
+      transform: translateY(-50%) scale(1.1);
+    }
+
+    & .clear-search-btn:active {
+      transform: translateY(-50%) scale(0.95);
     }
   }
 
@@ -366,14 +398,34 @@
   .prime-badge {
     position: absolute;
     top: 8px;
-    left: 8px;
+    right: 8px;
     background: #0a84ff;
     color: #fff;
     font-weight: 700;
-    font-size: 10px;
-    padding: 3px 6px;
-    border-radius: 4px;
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 6px;
     z-index: 10;
+    box-shadow: 0 2px 8px rgba(10, 132, 255, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Handle multiple badges - stack them vertically */
+  .netflix-badge {
+    top: 8px;
+    right: 8px;
+  }
+
+  .prime-badge {
+    top: 8px;
+    right: 8px;
+  }
+
+  /* When both badges exist, stack them */
+  .netflix-badge + .prime-badge,
+  .prime-badge + .netflix-badge {
+    top: 36px;
   }
 
   /* Flip card container and faces */
@@ -1508,9 +1560,15 @@
   /* Search */
   .search { margin-top: 1.5rem; padding: 0.5rem 0.75rem; max-width: 100%; }
   .search img { left: 0.5rem; height: 1rem; width: 1rem; }
-  .search input { padding-left: 2rem; font-size: 0.875rem; }
+  .search input { padding-left: 2rem; padding-right: 3rem; font-size: 0.875rem; }
+  .search .clear-search-btn { right: 0.5rem; width: 1.5rem; height: 1.5rem; font-size: 0.75rem; }
   .suggestion-dropdown { max-height: 180px; border-radius: 0 0 8px 8px; }
   .suggestion-item:active { background: #3b82f6; color: #fff; }
+  
+  /* Refresh indicator */
+  .refresh-indicator { margin-top: 0.5rem; margin-bottom: 1rem; }
+  .refresh-indicator p { font-size: 0.75rem; }
+  .refresh-btn { font-size: 0.875rem; padding: 0.5rem 1rem; }
 
   /* Trending */
   .trending { margin-top: 3rem; }

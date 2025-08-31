@@ -97,6 +97,19 @@ const Search = ({ searchTerm, setSearchTerm }) => {
           className="cursor-pointer"
           autoComplete="off"
         />
+        {searchTerm && (
+          <button
+            type="button"
+            onClick={() => {
+              setSearchTerm('');
+              setShowSuggestions(false);
+            }}
+            className="clear-search-btn"
+            title="Clear search"
+          >
+            ✕
+          </button>
+        )}
       </div>
       {showSuggestions && suggestions.length > 0 && (
         <ul className="suggestion-dropdown">
