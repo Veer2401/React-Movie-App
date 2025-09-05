@@ -64,6 +64,8 @@ const MovieCard = React.memo(({ movie, isFlipped: isFlippedProp, onCardClick }) 
     [trailerUrl, id, media_type]
   );
 
+  // no-op
+
   return (
     <li className={`movie-card flip-card${isFlipped ? ' flipped' : ''}`}>
       <div className="flip-inner">
